@@ -338,7 +338,8 @@
 
   <div class="tooltip" id="tooltip" role="status" aria-hidden="true"></div>
 
-  <script src="data/wetter-14-tage.js"></script>
+  <!-- Wetterdaten: erst data/, sonst Hauptordner (falls der Ordner beim Hochladen verloren ging) -->
+  <script src="data/wetter-14-tage.js" onerror="var s=document.createElement('script');s.src='wetter-14-tage.js';document.head.appendChild(s)"></script>
   <script src="i18n.js"></script>
   <script src="app.js"></script>
 </body>

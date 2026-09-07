@@ -617,5 +617,14 @@
     tryLoadJson();
   }
 
-  document.addEventListener('DOMContentLoaded', init);
+  // Start, sobald DOM und Wetterdaten da sind (Fallback-Script kann nach DOMContentLoaded eintreffen).
+  function start() {
+    if (window.CONUCO_WEATHER) { WEATHER = window.CONUCO_WEATHER; init(); return; }
+    var tries = 0;
+    var timer = setInterval(function () {
+      if (window.CONUCO_WEATHER) { clearInterval(timer); WEATHER = window.CONUCO_WEATHER; init(); }
+      else if (++tries > 100) { clearInterval(timer); console.error('Conuco: Wetterdaten (wetter-14-tage.js) nicht gefunden.'); }
+    }, 50);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
