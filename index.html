@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conuco – Riego y Clima · Cosecha y Costos</title>
+  <meta name="description" content="Conuco: radikal einfache Farm-Software für kleine Betriebe in Venezuela. Demo mit Bewässerung & Wetter sowie Ernte- & Kostenerfassung.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232F6B3C'/%3E%3Cpath d='M16 25V13M16 13c-5 0-7-4-7-7 4 0 7 2 7 7Zm0 0c5 0 7-4 7-7-4 0-7 2-7 7Z' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script>
+    // Theme so früh wie möglich setzen, damit nichts flackert.
+    (function () {
+      try {
+        var saved = localStorage.getItem('conuco.theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', saved || (prefersDark ? 'dark' : 'light'));
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- SVG-Symbole -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V11"/><path d="M12 11c-4.5 0-7-3.5-7-7 4 0 7 2.5 7 7Z"/><path d="M12 11c4.5 0 7-3.5 7-7-4 0-7 2.5-7 7Z"/></symbol>
+      <symbol id="i-drop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"/></symbol>
+      <symbol id="i-basket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h18l-1.5 9a2 2 0 0 1-2 1.7h-11a2 2 0 0 1-2-1.7L3 10Z"/><path d="m7 10 3-6M17 10l-3-6M9 14v3M12 14v3M15 14v3"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></symbol>
+      <symbol id="i-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></symbol>
+      <symbol id="i-chev-l" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></symbol>
+      <symbol id="i-chev-r" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+      <symbol id="i-ban" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol>
+      <symbol id="i-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></symbol>
+      <!-- Wetter -->
+      <symbol id="w-rain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15a4 4 0 0 1-.5-8A6 6 0 0 1 18 8a3.5 3.5 0 0 1 0 7"/><path d="M8 17v3M12 16v4M16 17v3"/></symbol>
+      <symbol id="w-storm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15a4 4 0 0 1-.5-8A6 6 0 0 1 18 8a3.5 3.5 0 0 1 0 7"/><path d="m13 13-2 4h3l-2 4"/></symbol>
+      <symbol id="w-suncloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v1.5M4 9h1.5M5.5 5.5l1 1"/><path d="M11.5 8.5A3.5 3.5 0 0 0 6 10.5"/><path d="M9 19a4 4 0 0 1-.5-8A6 6 0 0 1 20 12a3.5 3.5 0 0 1 0 7Z"/></symbol>
+      <symbol id="w-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 11a3.5 3.5 0 0 1 0 7Z"/></symbol>
+    </defs>
+  </svg>
+
+  <header class="header">
+    <div class="container header-inner">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><svg width="22" height="22"><use href="#i-leaf"/></svg></div>
+        <div>
+          <div class="brand-name">Conuco</div>
+          <div class="brand-tag" data-i18n="brand.tag">Finca de Jesús · Valencia, Carabobo</div>
+        </div>
+      </div>
+
+      <div class="segmented" role="group" aria-label="Plot" id="plotSwitch">
+        <button type="button" data-plot="norte" aria-pressed="true"><span class="dot field" aria-hidden="true"></span>Lote Norte</button>
+        <button type="button" data-plot="sur" aria-pressed="false"><span class="dot field" aria-hidden="true"></span>Lote Sur</button>
+        <button type="button" data-plot="inv1" aria-pressed="false"><span class="dot greenhouse" aria-hidden="true"></span>Invernadero 1</button>
+      </div>
+
+      <div class="header-controls">
+        <div class="segmented compact" role="group" aria-label="Idioma / Sprache" id="langSwitch">
+          <button type="button" data-lang="de" aria-pressed="true" lang="de">DE</button>
+          <button type="button" data-lang="es" aria-pressed="false" lang="es">ES</button>
+        </div>
+        <button type="button" class="icon-btn" id="themeToggle" data-i18n-aria="theme.toggle" aria-label="Design umschalten">
+          <svg class="icon-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+          <svg class="icon-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main">
+    <div class="page-head">
+      <div class="tabs" role="tablist" aria-label="Módulos">
+        <button type="button" class="tab" role="tab" data-tab="water" id="tab-water" aria-selected="true" aria-controls="panel-water">
+          <svg aria-hidden="true"><use href="#i-drop"/></svg><span data-i18n="tab.water">Bewässerung &amp; Wetter</span>
+        </button>
+        <button type="button" class="tab" role="tab" data-tab="costs" id="tab-costs" aria-selected="false" aria-controls="panel-costs" tabindex="-1">
+          <svg aria-hidden="true"><use href="#i-basket"/></svg><span data-i18n="tab.costs">Ernte &amp; Kosten</span>
+        </button>
+      </div>
+      <span class="badge sample" data-i18n="badge.sample">Beispieldaten</span>
+    </div>
+
+    <!-- ===================== Modul 1 ===================== -->
+    <section id="panel-water" role="tabpanel" aria-labelledby="tab-water" class="main" style="padding:0">
+      <div>
+        <h1 class="module-title" data-i18n="water.title">Riego y Clima</h1>
+        <p class="module-sub" data-i18n="water.sub">Valencia, Carabobo · Regenzeit. Die Frage ist nicht „wann bewässern“, sondern „wann nicht“ – und wie Ernte und Pflanzen vor zu viel Wasser geschützt werden.</p>
+      </div>
+
+      <div class="kpis" id="waterKpis"></div>
+
+      <div class="card timeline-card">
+        <div class="timeline-head">
+          <div>
+            <div class="card-title" data-i18n="timeline.title">14-Tage-Szenario</div>
+            <div class="card-sub" id="timelineSub"></div>
+          </div>
+          <div class="timeline-nav">
+            <button type="button" class="icon-btn" id="dayPrev" data-i18n-aria="timeline.prev" aria-label="Vorheriger Tag"><svg aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+            <button type="button" class="icon-btn" id="dayNext" data-i18n-aria="timeline.next" aria-label="Nächster Tag"><svg aria-hidden="true"><use href="#i-chev-r"/></svg></button>
+          </div>
+        </div>
+        <div class="timeline" id="timeline" role="group" data-i18n-aria="timeline.group" aria-label="Tag auswählen"></div>
+        <div class="timeline-legend">
+          <span><i class="swatch"></i><span data-i18n="timeline.legend.forecast">Tag 1–10: echte Vorhersage (AccuWeather)</span></span>
+          <span><i class="swatch dashed"></i><span data-i18n="timeline.legend.pattern">Tag 11–14: typisches Regenzeit-Muster</span></span>
+          <span data-i18n="timeline.legend.rain">Punkt = Regenwahrscheinlichkeit</span>
+        </div>
+      </div>
+
+      <div class="water-grid">
+        <div class="card" id="weatherCard">
+          <div class="card-head">
+            <div>
+              <div class="card-title" id="weatherTitle"></div>
+              <div class="card-sub" id="weatherDate"></div>
+            </div>
+            <span class="badge" id="sourceBadge"></span>
+          </div>
+          <div class="weather-now">
+            <div class="weather-icon" id="weatherIcon"></div>
+            <div>
+              <div class="weather-temp"><span id="tempMax"></span><small id="tempMin"></small></div>
+              <div class="weather-cond" id="weatherCond"></div>
+              <div class="weather-meta" id="weatherMeta"></div>
+            </div>
+          </div>
+          <div>
+            <div class="card-sub" style="margin-bottom:.45rem" data-i18n="weather.next5">Nächste 5 Tage</div>
+            <div class="strip" id="strip"></div>
+          </div>
+        </div>
+
+        <div class="card reco-card" id="recoCard">
+          <div class="card-head">
+            <div>
+              <div class="card-title" id="recoPlotName"></div>
+              <div class="card-sub" id="recoPlotType"></div>
+            </div>
+            <span class="badge" id="recoPlotBadge"></span>
+          </div>
+
+          <div class="reco-main" id="recoMain"></div>
+
+          <div class="moisture" id="moisture"></div>
+
+          <div class="reco-actions" id="recoActions"></div>
+
+          <div id="diseaseAlert"></div>
+          <div id="harvestAlert"></div>
+
+          <div>
+            <div class="card-sub" style="margin-bottom:.45rem" data-i18n="compare.title">Alle Plots am gewählten Tag</div>
+            <div class="compare" id="compare"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== Modul 2 ===================== -->
+    <section id="panel-costs" role="tabpanel" aria-labelledby="tab-costs" class="main" style="padding:0" hidden>
+      <div>
+        <h1 class="module-title" data-i18n="costs.title">Cosecha y Costos</h1>
+        <p class="module-sub" data-i18n="costs.sub">Tomate „Río Grande“, 11.000 Pflanzen, Saison 2026 · alle Beträge in USD. Ernte und Ausgaben erfassen, Kosten pro Kilo und Marge sofort sehen.</p>
+      </div>
+
+      <div class="kpis" id="costKpis"></div>
+
+      <div class="costs-grid">
+        <div style="display:flex;flex-direction:column;gap:1.1rem;min-width:0">
+          <div class="charts">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title" data-i18n="chart.harvest.title">Erntemenge über Zeit</div>
+                  <div class="card-sub" data-i18n="chart.harvest.sub">kg pro Erntetag, alle Plots</div>
+                </div>
+              </div>
+              <div class="chart-wrap" id="harvestChart"></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title" data-i18n="chart.costs.title">Kosten nach Kategorie</div>
+                  <div class="card-sub" data-i18n="chart.costs.sub">Anteil an den Gesamtkosten</div>
+                </div>
+              </div>
+              <div class="donut-layout">
+                <div class="chart-wrap" id="costDonut"></div>
+                <div class="legend" id="costLegend"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tables">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title" data-i18n="table.harvest.title">Ernte-Einträge</div>
+                  <div class="card-sub" id="harvestCount"></div>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table id="harvestTable">
+                  <thead><tr>
+                    <th data-i18n="col.date">Datum</th>
+                    <th data-i18n="col.plot">Plot</th>
+                    <th class="num" data-i18n="col.kg">kg</th>
+                    <th data-i18n="col.quality">Qualität</th>
+                  </tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title" data-i18n="table.costs.title">Kosten-Einträge</div>
+                  <div class="card-sub" id="costCount"></div>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table id="costTable">
+                  <thead><tr>
+                    <th data-i18n="col.date">Datum</th>
+                    <th data-i18n="col.category">Kategorie</th>
+                    <th data-i18n="col.note">Notiz</th>
+                    <th class="num" data-i18n="col.amount">USD</th>
+                  </tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:1.1rem;min-width:0">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title" data-i18n="price.title">Verkaufspreis</div>
+                <div class="card-sub" data-i18n="price.sub">Ab Hof, USD pro kg – Kennzahlen reagieren sofort</div>
+              </div>
+            </div>
+            <div class="price-row">
+              <label for="priceInput" data-i18n="price.label">Preis Qualität A</label>
+              <span class="field"><span class="unit">$</span><input type="number" id="priceInput" min="0" step="0.05" value="0.70" inputmode="decimal"><span class="unit">/kg</span></span>
+            </div>
+            <p class="price-note" data-i18n="price.note">Qualität B wird mit 80 %, Qualität C mit 50 % des A-Preises bewertet.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title" data-i18n="form.title">Eintrag hinzufügen</div>
+                <div class="card-sub" data-i18n="form.sub">Wird sofort in Tabelle, Kennzahlen und Diagramme übernommen</div>
+              </div>
+            </div>
+            <div class="segmented" role="group" id="entryTypeSwitch" data-i18n-aria="form.type" aria-label="Eintragstyp">
+              <button type="button" data-type="harvest" aria-pressed="true" data-i18n="form.type.harvest">Ernte</button>
+              <button type="button" data-type="cost" aria-pressed="false" data-i18n="form.type.cost">Kosten</button>
+            </div>
+
+            <form id="entryForm" novalidate>
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="fDate" data-i18n="col.date">Datum</label>
+                  <span class="field"><input type="date" id="fDate" required></span>
+                </div>
+
+                <div class="form-field" data-for="harvest">
+                  <label for="fPlot" data-i18n="col.plot">Plot</label>
+                  <span class="field"><select id="fPlot">
+                    <option value="norte">Lote Norte</option>
+                    <option value="sur">Lote Sur</option>
+                    <option value="inv1">Invernadero 1</option>
+                  </select></span>
+                </div>
+                <div class="form-field" data-for="harvest">
+                  <label for="fKg" data-i18n="form.kg">Menge (kg)</label>
+                  <span class="field"><input type="number" id="fKg" min="1" step="1" placeholder="120" inputmode="numeric"></span>
+                </div>
+                <div class="form-field" data-for="harvest">
+                  <label for="fQuality" data-i18n="col.quality">Qualität</label>
+                  <span class="field"><select id="fQuality">
+                    <option value="A" data-i18n="quality.A">A – Erste Wahl</option>
+                    <option value="B" data-i18n="quality.B">B – Zweite Wahl</option>
+                    <option value="C" data-i18n="quality.C">C – Verarbeitung</option>
+                  </select></span>
+                </div>
+
+                <div class="form-field" data-for="cost" hidden>
+                  <label for="fCategory" data-i18n="col.category">Kategorie</label>
+                  <span class="field"><select id="fCategory">
+                    <option value="seed" data-i18n="cat.seed">Saatgut</option>
+                    <option value="inputs" data-i18n="cat.inputs">Betriebsmittel</option>
+                    <option value="labor" data-i18n="cat.labor">Arbeitskraft</option>
+                    <option value="fuel" data-i18n="cat.fuel">Treibstoff</option>
+                  </select></span>
+                </div>
+                <div class="form-field" data-for="cost" hidden>
+                  <label for="fAmount" data-i18n="form.amount">Betrag (USD)</label>
+                  <span class="field"><span class="unit">$</span><input type="number" id="fAmount" min="0.01" step="0.01" placeholder="85.00" inputmode="decimal"></span>
+                </div>
+                <div class="form-field full" data-for="cost" hidden>
+                  <label for="fNote" data-i18n="col.note">Notiz</label>
+                  <span class="field"><input type="text" id="fNote" maxlength="60" data-i18n-placeholder="form.note.ph" placeholder="z. B. Diesel für die Pumpe"></span>
+                </div>
+              </div>
+              <div class="form-actions" style="margin-top:.9rem">
+                <span class="form-feedback" id="formFeedback" aria-live="polite"></span>
+                <button type="submit" class="btn btn-earth"><svg aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="form.submit">Hinzufügen</span></button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span data-i18n="footer.left">Conuco · Demo-MVP · Wetterdaten: AccuWeather-Vorhersage Valencia (Tag 1–10) + Klimamuster (Tag 11–14)</span>
+      <span data-i18n="footer.right">Für kleine Betriebe gebaut: USD, offline-tauglich, ohne Schnickschnack.</span>
+    </div>
+  </footer>
+
+  <div class="tooltip" id="tooltip" role="status" aria-hidden="true"></div>
+
+  <script src="data/wetter-14-tage.js"></script>
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

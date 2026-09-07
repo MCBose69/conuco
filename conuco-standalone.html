@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Conuco – Riego y Clima · Cosecha y Costos</title>
+  <meta name="description" content="Conuco: radikal einfache Farm-Software für kleine Betriebe in Venezuela. Demo mit Bewässerung & Wetter sowie Ernte- & Kostenerfassung.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232F6B3C'/%3E%3Cpath d='M16 25V13M16 13c-5 0-7-4-7-7 4 0 7 2 7 7Zm0 0c5 0 7-4 7-7-4 0-7 2-7 7Z' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script>
+    // Theme so früh wie möglich setzen, damit nichts flackert.
+    (function () {
+      try {
+        var saved = localStorage.getItem('conuco.theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', saved || (prefersDark ? 'dark' : 'light'));
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+/* ==========================================================================
+   Conuco – Design Tokens
+   ========================================================================== */
+:root {
+  color-scheme: light;
+
+  /* Neutrale, warme Töne */
+  --bg: #F6F2E8;
+  --surface: #FFFDF8;
+  --surface-2: #F0EBDE;
+  --surface-3: #E7E1D2;
+  --border: #E0D9C8;
+  --border-strong: #C9C1AD;
+  --text: #1E221B;
+  --text-2: #565C50;
+  --text-3: #858B7E;
+  --shadow: 0 1px 2px rgba(50, 40, 20, .05), 0 6px 18px -8px rgba(50, 40, 20, .16);
+
+  /* Akzente */
+  --accent: #2F6B3C;
+  --accent-strong: #245530;
+  --accent-soft: #E1EEDE;
+  --accent-contrast: #FFFFFF;
+
+  --earth: #B9622C;
+  --earth-strong: #964D20;
+  --earth-soft: #F6E5D7;
+
+  --water: #2E6E8E;
+  --water-strong: #225670;
+  --water-soft: #DCEAF1;
+
+  /* Semantik (getrennt von den Akzenten) */
+  --ok: #3A7A49;
+  --ok-soft: #E0EFE1;
+  --warn: #A9701A;
+  --warn-soft: #FBEDD2;
+  --crit: #B0402A;
+  --crit-soft: #F8DFD8;
+  --info: #2E6E8E;
+  --info-soft: #DCEAF1;
+
+  /* Chart-Serien (validiert: farbenblind-sicher, Reihenfolge fix) */
+  --series-labor: #D46A2A;
+  --series-inputs: #2F7FB0;
+  --series-fuel: #D4A12A;
+  --series-seed: #2F8A48;
+  --grid: #E6E0D1;
+
+  --focus: #2E6E8E;
+
+  --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-ui: "Public Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-s: 6px;
+  --radius: 10px;
+  --radius-l: 16px;
+  --dur: 180ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #101612;
+    --surface: #182019;
+    --surface-2: #1F2921;
+    --surface-3: #283329;
+    --border: #2C372E;
+    --border-strong: #3C493E;
+    --text: #EDEAE0;
+    --text-2: #B3B5A8;
+    --text-3: #7D837A;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -10px rgba(0, 0, 0, .55);
+
+    --accent: #6BAE7A;
+    --accent-strong: #8CC79A;
+    --accent-soft: #1F3324;
+    --accent-contrast: #0F1A12;
+
+    --earth: #D98A57;
+    --earth-strong: #ECA675;
+    --earth-soft: #35251A;
+
+    --water: #6AA8C5;
+    --water-strong: #8CC0D8;
+    --water-soft: #1B3040;
+
+    --ok: #6EB27E;
+    --ok-soft: #1D3324;
+    --warn: #DDA23F;
+    --warn-soft: #382C15;
+    --crit: #E26E54;
+    --crit-soft: #3E221B;
+    --info: #6AA8C5;
+    --info-soft: #1B3040;
+
+    --series-labor: #D8702A;
+    --series-inputs: #3585C0;
+    --series-fuel: #B58A10;
+    --series-seed: #33A862;
+    --grid: #263029;
+
+    --focus: #8CC0D8;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #101612;
+  --surface: #182019;
+  --surface-2: #1F2921;
+  --surface-3: #283329;
+  --border: #2C372E;
+  --border-strong: #3C493E;
+  --text: #EDEAE0;
+  --text-2: #B3B5A8;
+  --text-3: #7D837A;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -10px rgba(0, 0, 0, .55);
+
+  --accent: #6BAE7A;
+  --accent-strong: #8CC79A;
+  --accent-soft: #1F3324;
+  --accent-contrast: #0F1A12;
+
+  --earth: #D98A57;
+  --earth-strong: #ECA675;
+  --earth-soft: #35251A;
+
+  --water: #6AA8C5;
+  --water-strong: #8CC0D8;
+  --water-soft: #1B3040;
+
+  --ok: #6EB27E;
+  --ok-soft: #1D3324;
+  --warn: #DDA23F;
+  --warn-soft: #382C15;
+  --crit: #E26E54;
+  --crit-soft: #3E221B;
+  --info: #6AA8C5;
+  --info-soft: #1B3040;
+
+  --series-labor: #D8702A;
+  --series-inputs: #3585C0;
+  --series-fuel: #B58A10;
+  --series-seed: #33A862;
+  --grid: #263029;
+
+  --focus: #8CC0D8;
+}
+
+/* ==========================================================================
+   Basis
+   ========================================================================== */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--dur) ease, color var(--dur) ease;
+}
+h1, h2, h3, h4 { margin: 0; font-weight: 600; line-height: 1.2; }
+p { margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.visually-hidden {
+  position: absolute !important; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0; padding: 0; margin: -1px;
+}
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: var(--radius-s); }
+[hidden] { display: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+
+.container { width: min(1180px, 100% - 2rem); margin-inline: auto; }
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+.header {
+  position: sticky; top: 0; z-index: 20;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.header-inner {
+  display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;
+  padding-block: .8rem;
+}
+.brand { display: flex; align-items: center; gap: .65rem; margin-right: auto; }
+.brand-mark {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--accent); color: var(--accent-contrast);
+  display: grid; place-items: center; flex: none;
+}
+.brand-name { font-family: var(--font-display); font-weight: 600; font-size: 1.55rem; letter-spacing: -.01em; line-height: 1; }
+.brand-tag { font-size: .78rem; color: var(--text-3); margin-top: .18rem; }
+
+.segmented {
+  display: inline-flex; padding: 3px; gap: 2px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px;
+}
+.segmented button {
+  white-space: nowrap;
+  border: 0; background: transparent; color: var(--text-2);
+  padding: .4rem .85rem; border-radius: 999px; font-weight: 500; font-size: .875rem;
+  display: inline-flex; align-items: center; gap: .4rem;
+  transition: background-color var(--dur), color var(--dur);
+}
+.segmented button:hover { color: var(--text); }
+.segmented button[aria-pressed="true"], .segmented button[aria-selected="true"] {
+  background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.08);
+}
+.segmented .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--water); }
+.segmented .dot.field { background: var(--accent); }
+.segmented .dot.greenhouse { background: var(--water); }
+.segmented.compact button { padding: .35rem .7rem; font-size: .8rem; }
+
+.header-controls { display: flex; align-items: center; gap: .5rem; }
+.icon-btn {
+  width: 36px; height: 36px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-2); display: grid; place-items: center;
+  transition: background-color var(--dur), color var(--dur);
+}
+.icon-btn:hover { color: var(--text); background: var(--surface-2); }
+.icon-btn svg { width: 18px; height: 18px; }
+/* Theme-Icon: JS setzt data-theme immer explizit (light|dark) */
+.icon-moon { display: none; }
+:root[data-theme="dark"] .icon-sun { display: none; }
+:root[data-theme="dark"] .icon-moon { display: block; }
+
+/* ==========================================================================
+   Tabs + Seitenkopf
+   ========================================================================== */
+.main { padding-block: 1.5rem 3rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.tabs { display: inline-flex; gap: .25rem; border-bottom: 1px solid var(--border); }
+.tab {
+  white-space: nowrap;
+  border: 0; background: transparent; color: var(--text-2);
+  padding: .6rem .9rem .7rem; font-weight: 600; font-size: .95rem; position: relative;
+  display: inline-flex; align-items: center; gap: .5rem; border-radius: var(--radius-s) var(--radius-s) 0 0;
+}
+.tab svg { width: 18px; height: 18px; }
+.tab::after { content: ""; position: absolute; left: .5rem; right: .5rem; bottom: -1px; height: 2px; background: transparent; border-radius: 2px; }
+.tab:hover { color: var(--text); }
+.tab[aria-selected="true"] { color: var(--text); }
+.tab[aria-selected="true"]::after { background: var(--accent); }
+.tab[data-tab="costs"][aria-selected="true"]::after { background: var(--earth); }
+.tab[data-tab="water"][aria-selected="true"]::after { background: var(--water); }
+
+.badge {
+  display: inline-flex; align-items: center; gap: .35rem;
+  font-size: .72rem; font-weight: 600; letter-spacing: .02em; text-transform: uppercase;
+  padding: .22rem .55rem; border-radius: 999px; border: 1px solid var(--border);
+  color: var(--text-2); background: var(--surface);
+  white-space: nowrap;
+}
+.badge.sample { border-style: dashed; }
+.badge.tone-ok { color: var(--ok); background: var(--ok-soft); border-color: transparent; }
+.badge.tone-warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+.badge.tone-crit { color: var(--crit); background: var(--crit-soft); border-color: transparent; }
+.badge.tone-info { color: var(--info); background: var(--info-soft); border-color: transparent; }
+.badge.tone-earth { color: var(--earth); background: var(--earth-soft); border-color: transparent; }
+.badge.tone-accent { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+
+.module-title { font-family: var(--font-display); font-weight: 600; font-size: 1.7rem; letter-spacing: -.01em; }
+.module-sub { color: var(--text-2); margin-top: .25rem; max-width: 62ch; }
+
+/* ==========================================================================
+   Karten / Kennzahlen
+   ========================================================================== */
+.card {
+  min-width: 0;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-l);
+  box-shadow: var(--shadow); padding: 1.15rem 1.25rem;
+  display: flex; flex-direction: column; gap: .9rem;
+}
+.card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.card-title { font-size: 1.02rem; font-weight: 600; }
+.card-sub { color: var(--text-3); font-size: .82rem; margin-top: .15rem; }
+
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .9rem; }
+.kpi {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: .95rem 1.05rem; display: flex; flex-direction: column; gap: .35rem;
+  position: relative; overflow: hidden; box-shadow: var(--shadow);
+}
+.kpi::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--kpi-color, var(--text-3)); }
+.kpi.tone-ok { --kpi-color: var(--ok); }
+.kpi.tone-warn { --kpi-color: var(--warn); }
+.kpi.tone-crit { --kpi-color: var(--crit); }
+.kpi.tone-info { --kpi-color: var(--info); }
+.kpi.tone-earth { --kpi-color: var(--earth); }
+.kpi.tone-accent { --kpi-color: var(--accent); }
+.kpi-label { font-size: .78rem; color: var(--text-2); font-weight: 500; letter-spacing: .01em; overflow-wrap: anywhere; hyphens: auto; }
+.kpi-value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.6rem; font-weight: 500; letter-spacing: -.01em; line-height: 1.1; }
+.kpi-value small { font-size: .85rem; color: var(--text-3); font-weight: 400; margin-left: .3rem; }
+.kpi-status { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--text-2); }
+.kpi-status .pill { width: 8px; height: 8px; border-radius: 50%; background: var(--kpi-color, var(--text-3)); flex: none; }
+
+/* ==========================================================================
+   Modul 1: Riego y Clima
+   ========================================================================== */
+.timeline-card { gap: .75rem; }
+.timeline-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+.timeline-nav { display: flex; gap: .35rem; }
+.timeline { display: grid; grid-template-columns: repeat(14, minmax(0, 1fr)); gap: .35rem; }
+.day-chip {
+  border: 1px solid var(--border); background: var(--surface-2); border-radius: var(--radius-s);
+  padding: .5rem .25rem .45rem; display: flex; flex-direction: column; align-items: center; gap: .12rem;
+  color: var(--text-2); line-height: 1.15; min-width: 0;
+  transition: background-color var(--dur), border-color var(--dur), color var(--dur);
+}
+.day-chip:hover { border-color: var(--border-strong); color: var(--text); }
+.day-chip .wd { font-size: .68rem; text-transform: uppercase; letter-spacing: .04em; }
+.day-chip .dt { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: .82rem; font-weight: 500; color: var(--text); }
+.day-chip .rp { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: .72rem; margin-top: .15rem; display: inline-flex; align-items: center; gap: .2rem; }
+.day-chip .rp::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--rp-color, var(--text-3)); }
+.day-chip.rp-ok { --rp-color: var(--ok); }
+.day-chip.rp-warn { --rp-color: var(--warn); }
+.day-chip.rp-crit { --rp-color: var(--crit); }
+.day-chip[aria-pressed="true"] { background: var(--water-soft); border-color: var(--water); color: var(--text); box-shadow: inset 0 0 0 1px var(--water); }
+.day-chip.pattern { border-style: dashed; }
+.timeline-legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .78rem; color: var(--text-3); }
+.timeline-legend span { display: inline-flex; align-items: center; gap: .35rem; }
+.timeline-legend .swatch { width: 14px; height: 10px; border: 1px solid var(--border-strong); border-radius: 3px; background: var(--surface-2); }
+.timeline-legend .swatch.dashed { border-style: dashed; }
+
+.water-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 1.1rem; align-items: start; }
+.weather-now { display: flex; gap: 1.25rem; align-items: center; }
+.weather-icon { width: 64px; height: 64px; flex: none; color: var(--water); }
+.weather-icon svg { width: 100%; height: 100%; }
+.weather-temp { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 2.6rem; font-weight: 500; line-height: 1; letter-spacing: -.02em; }
+.weather-temp small { font-size: 1.1rem; color: var(--text-3); font-weight: 400; }
+.weather-cond { color: var(--text-2); margin-top: .3rem; max-width: 34ch; }
+.weather-meta { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: .35rem; font-size: .82rem; color: var(--text-3); }
+.weather-meta b { color: var(--text); font-weight: 500; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .5rem; }
+.strip-day {
+  border: 1px solid var(--border); border-radius: var(--radius-s); background: var(--surface-2);
+  padding: .55rem .35rem; text-align: center; display: flex; flex-direction: column; gap: .2rem; align-items: center;
+}
+.strip-day.active { border-color: var(--water); background: var(--water-soft); }
+.strip-day .wd { font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); }
+.strip-day svg { width: 26px; height: 26px; color: var(--water); }
+.strip-day .t { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: .8rem; }
+.strip-day .t span { color: var(--text-3); }
+.strip-day .r { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: .74rem; color: var(--text-2); }
+
+.reco-card { gap: 1rem; }
+.reco-card.is-greenhouse { border-color: color-mix(in srgb, var(--water) 45%, var(--border)); }
+.reco-card.is-field { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.reco-main {
+  display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: start;
+  padding: 1rem 1.1rem; border-radius: var(--radius); background: var(--tone-soft, var(--surface-2));
+  border: 1px solid color-mix(in srgb, var(--tone, var(--border)) 35%, transparent);
+}
+.reco-main.tone-ok { --tone: var(--ok); --tone-soft: var(--ok-soft); }
+.reco-main.tone-warn { --tone: var(--warn); --tone-soft: var(--warn-soft); }
+.reco-main.tone-crit { --tone: var(--crit); --tone-soft: var(--crit-soft); }
+.reco-main.tone-info { --tone: var(--info); --tone-soft: var(--info-soft); }
+.reco-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--tone); color: #fff; display: grid; place-items: center; flex: none; }
+.reco-icon svg { width: 24px; height: 24px; }
+.reco-kicker { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; color: var(--tone); }
+.reco-title { font-family: var(--font-display); font-size: 1.45rem; font-weight: 600; letter-spacing: -.01em; margin-top: .1rem; }
+.reco-why { color: var(--text-2); margin-top: .35rem; font-size: .92rem; }
+
+.moisture { display: flex; flex-direction: column; gap: .45rem; }
+.moisture-row { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; font-size: .85rem; color: var(--text-2); }
+.moisture-row b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 500; color: var(--text); font-size: 1rem; }
+.meter { height: 10px; border-radius: 999px; background: var(--surface-3); overflow: hidden; position: relative; }
+.meter-fill { height: 100%; border-radius: 999px; background: var(--meter-color, var(--water)); transition: width 300ms ease, background-color var(--dur); }
+.meter-marks { display: flex; justify-content: space-between; font-size: .7rem; color: var(--text-3); font-family: var(--font-mono); }
+.meter-marks span:nth-child(2) { color: var(--ok); }
+
+.reco-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.btn {
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  padding: .55rem .95rem; border-radius: var(--radius-s); font-weight: 600; font-size: .875rem;
+  display: inline-flex; align-items: center; gap: .45rem;
+  transition: background-color var(--dur), border-color var(--dur), color var(--dur);
+}
+.btn svg { width: 16px; height: 16px; }
+.btn:hover { background: var(--surface-2); }
+.btn-primary { background: var(--water); border-color: var(--water); color: #fff; }
+.btn-primary:hover { background: var(--water-strong); border-color: var(--water-strong); }
+.btn-earth { background: var(--earth); border-color: var(--earth); color: #fff; }
+.btn-earth:hover { background: var(--earth-strong); border-color: var(--earth-strong); }
+.btn-ghost { border-color: transparent; background: transparent; color: var(--text-2); }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.btn.is-done { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); }
+.reco-actions .hint { font-size: .82rem; color: var(--text-3); }
+
+.alert {
+  display: grid; grid-template-columns: auto 1fr; gap: .75rem; align-items: start;
+  padding: .85rem 1rem; border-radius: var(--radius); border: 1px solid transparent;
+}
+.alert svg { width: 20px; height: 20px; margin-top: .1rem; }
+.alert-title { font-weight: 600; }
+.alert-body { color: var(--text-2); font-size: .9rem; margin-top: .15rem; }
+.alert.tone-crit { background: var(--crit-soft); color: var(--text); border-color: color-mix(in srgb, var(--crit) 30%, transparent); }
+.alert.tone-crit svg, .alert.tone-crit .alert-title { color: var(--crit); }
+.alert.tone-warn { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+.alert.tone-warn svg, .alert.tone-warn .alert-title { color: var(--warn); }
+.alert.tone-ok { background: var(--ok-soft); border-color: color-mix(in srgb, var(--ok) 30%, transparent); }
+.alert.tone-ok svg, .alert.tone-ok .alert-title { color: var(--ok); }
+.alert.tone-earth { background: var(--earth-soft); border-color: color-mix(in srgb, var(--earth) 35%, transparent); }
+.alert.tone-earth svg, .alert.tone-earth .alert-title { color: var(--earth); }
+
+.compare { display: grid; gap: .5rem; }
+.compare-row {
+  display: grid; grid-template-columns: 1.2fr auto 1fr; gap: .75rem; align-items: center;
+  padding: .55rem .75rem; border-radius: var(--radius-s); background: var(--surface-2); border: 1px solid var(--border);
+  font-size: .88rem;
+}
+.compare-row.active { border-color: var(--border-strong); background: var(--surface); }
+.compare-row .name { display: flex; align-items: center; gap: .5rem; font-weight: 500; }
+.compare-row .name .dot { width: 8px; height: 8px; border-radius: 50%; }
+.compare-row .type { color: var(--text-3); font-size: .78rem; }
+.compare-row .moist { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-2); font-size: .82rem; }
+.compare-row .badge { justify-self: end; }
+
+/* ==========================================================================
+   Modul 2: Cosecha y Costos
+   ========================================================================== */
+.costs-grid { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); gap: 1.1rem; align-items: start; }
+.charts { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); gap: 1.1rem; }
+.chart-wrap { position: relative; width: 100%; }
+.chart-wrap svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart-wrap .axis text { fill: var(--text-3); font-family: var(--font-mono); font-size: 11px; }
+.chart-wrap .grid line { stroke: var(--grid); stroke-width: 1; }
+.chart-wrap .bar { fill: var(--accent); transition: opacity var(--dur); }
+.chart-wrap .bar-hit { fill: transparent; cursor: pointer; }
+.chart-wrap .bar-hit:hover + .bar, .chart-wrap .bar.is-hover { opacity: .78; }
+.chart-wrap .bar-label { fill: var(--text-2); font-family: var(--font-mono); font-size: 11px; text-anchor: middle; }
+.donut-layout { display: grid; grid-template-columns: minmax(120px, 150px) minmax(0, 1fr); gap: 1rem; align-items: center; }
+.donut-center { font-family: var(--font-mono); font-variant-numeric: tabular-nums; fill: var(--text); font-size: 15px; font-weight: 500; text-anchor: middle; }
+.donut-center-label { fill: var(--text-3); font-family: var(--font-ui); font-size: 10px; text-anchor: middle; }
+.legend { display: flex; flex-direction: column; gap: .5rem; font-size: .85rem; }
+.legend-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: .5rem; align-items: center; min-width: 0; }
+.legend-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.legend-row .sw { width: 12px; height: 12px; border-radius: 3px; }
+.legend-row .val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.legend-row .pct { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--text-3); min-width: 3.6ch; text-align: right; }
+.seg { transition: opacity var(--dur); cursor: pointer; }
+.seg.is-dim { opacity: .35; }
+
+.tooltip {
+  position: fixed; z-index: 50; pointer-events: none;
+  background: var(--text); color: var(--bg); padding: .45rem .65rem; border-radius: var(--radius-s);
+  font-size: .8rem; line-height: 1.35; box-shadow: var(--shadow); opacity: 0; transform: translateY(4px);
+  transition: opacity 120ms ease, transform 120ms ease; max-width: 240px;
+}
+.tooltip.show { opacity: 1; transform: translateY(0); }
+.tooltip b { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 500; }
+
+.price-row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.price-row label { font-size: .85rem; color: var(--text-2); }
+.field {
+  display: inline-flex; align-items: center; gap: .4rem;
+  border: 1px solid var(--border-strong); background: var(--surface); border-radius: var(--radius-s); padding: .35rem .6rem;
+}
+.field:focus-within { outline: 2px solid var(--focus); outline-offset: 1px; }
+.field input, .field select { border: 0; background: transparent; outline: none; min-width: 0; }
+.field input[type="number"] { font-family: var(--font-mono); font-variant-numeric: tabular-nums; width: 6.5ch; }
+.field .unit { color: var(--text-3); font-size: .8rem; }
+.price-note { font-size: .78rem; color: var(--text-3); }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+.form-grid .full { grid-column: 1 / -1; }
+.form-field { display: flex; flex-direction: column; gap: .3rem; }
+.form-field label { font-size: .78rem; font-weight: 600; color: var(--text-2); }
+.form-field .field { width: 100%; }
+.form-field .field input, .form-field .field select { width: 100%; }
+.form-actions { display: flex; justify-content: space-between; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.form-feedback { font-size: .82rem; color: var(--ok); min-height: 1.2em; }
+.form-feedback.error { color: var(--crit); }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+th, td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+th { font-size: .74rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); font-weight: 600; }
+td.num, th.num { text-align: right; }
+td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td .cat, td .plot-tag { white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr.is-new td { animation: rowIn 600ms ease; }
+@keyframes rowIn { from { background: var(--accent-soft); } to { background: transparent; } }
+.quality { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; }
+.quality .sw { width: 8px; height: 8px; border-radius: 50%; }
+.quality.A .sw { background: var(--ok); }
+.quality.B .sw { background: var(--warn); }
+.quality.C .sw { background: var(--crit); }
+.cat { display: inline-flex; align-items: center; gap: .4rem; }
+.cat .sw { width: 10px; height: 10px; border-radius: 3px; }
+.plot-tag { display: inline-flex; align-items: center; gap: .35rem; }
+.plot-tag .dot { width: 7px; height: 7px; border-radius: 50%; }
+.tables { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
+.table-foot { display: flex; justify-content: space-between; color: var(--text-3); font-size: .78rem; }
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+.footer { border-top: 1px solid var(--border); padding-block: 1.25rem 2rem; color: var(--text-3); font-size: .8rem; }
+.footer-inner { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 1100px) {
+  .charts { grid-template-columns: 1fr; }
+}
+@media (max-width: 1000px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .water-grid, .costs-grid, .charts, .tables { grid-template-columns: minmax(0, 1fr); }
+  .timeline { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  body { font-size: 14px; }
+  .header-inner { gap: .6rem; }
+  .brand { width: 100%; }
+  .header .segmented { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .header .segmented button { padding: .35rem .6rem; font-size: .8rem; }
+  .page-head { flex-direction: column; align-items: flex-start; gap: .6rem; }
+  .tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; width: 100%; }
+  .tab { padding: .55rem .7rem .65rem; font-size: .9rem; }
+  .module-title { font-size: 1.45rem; }
+  .kpis { grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .kpi-value { font-size: 1.3rem; }
+  .timeline { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .25rem; }
+  .day-chip .rp { display: none; }
+  .strip { gap: .25rem; }
+  .strip-day { padding: .45rem .15rem; }
+  .strip-day .wd { font-size: .62rem; }
+  .strip-day .t { font-size: .72rem; }
+  .strip-day .r { font-size: .68rem; }
+  .strip-day svg { width: 22px; height: 22px; }
+  .weather-temp { font-size: 2.2rem; }
+  .compare-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .compare-row .moist { grid-column: 1; }
+  .compare-row .badge { grid-row: 1 / span 2; }
+  .form-grid { grid-template-columns: 1fr; }
+  .donut-layout { grid-template-columns: 1fr; justify-items: center; }
+  .reco-main { grid-template-columns: 1fr; }
+}
+
+</style>
+</head>
+<body>
+
+  <!-- SVG-Symbole -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V11"/><path d="M12 11c-4.5 0-7-3.5-7-7 4 0 7 2.5 7 7Z"/><path d="M12 11c4.5 0 7-3.5 7-7-4 0-7 2.5-7 7Z"/></symbol>
+      <symbol id="i-drop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z"/></symbol>
+      <symbol id="i-basket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10h18l-1.5 9a2 2 0 0 1-2 1.7h-11a2 2 0 0 1-2-1.7L3 10Z"/><path d="m7 10 3-6M17 10l-3-6M9 14v3M12 14v3M15 14v3"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></symbol>
+      <symbol id="i-warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+      <symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></symbol>
+      <symbol id="i-chev-l" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></symbol>
+      <symbol id="i-chev-r" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></symbol>
+      <symbol id="i-ban" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></symbol>
+      <symbol id="i-house" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></symbol>
+      <!-- Wetter -->
+      <symbol id="w-rain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15a4 4 0 0 1-.5-8A6 6 0 0 1 18 8a3.5 3.5 0 0 1 0 7"/><path d="M8 17v3M12 16v4M16 17v3"/></symbol>
+      <symbol id="w-storm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15a4 4 0 0 1-.5-8A6 6 0 0 1 18 8a3.5 3.5 0 0 1 0 7"/><path d="m13 13-2 4h3l-2 4"/></symbol>
+      <symbol id="w-suncloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v1.5M4 9h1.5M5.5 5.5l1 1"/><path d="M11.5 8.5A3.5 3.5 0 0 0 6 10.5"/><path d="M9 19a4 4 0 0 1-.5-8A6 6 0 0 1 20 12a3.5 3.5 0 0 1 0 7Z"/></symbol>
+      <symbol id="w-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 11a3.5 3.5 0 0 1 0 7Z"/></symbol>
+    </defs>
+  </svg>
+
+  <header class="header">
+    <div class="container header-inner">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><svg width="22" height="22"><use href="#i-leaf"/></svg></div>
+        <div>
+          <div class="brand-name">Conuco</div>
+          <div class="brand-tag" data-i18n="brand.tag">Finca de Jesús · Valencia, Carabobo</div>
+        </div>
+      </div>
+
+      <div class="segmented" role="group" aria-label="Plot" id="plotSwitch">
+        <button type="button" data-plot="norte" aria-pressed="true"><span class="dot field" aria-hidden="true"></span>Lote Norte</button>
+        <button type="button" data-plot="sur" aria-pressed="false"><span class="dot field" aria-hidden="true"></span>Lote Sur</button>
+        <button type="button" data-plot="inv1" aria-pressed="false"><span class="dot greenhouse" aria-hidden="true"></span>Invernadero 1</button>
+      </div>
+
+      <div class="header-controls">
+        <div class="segmented compact" role="group" aria-label="Idioma / Sprache" id="langSwitch">
+          <button type="button" data-lang="de" aria-pressed="true" lang="de">DE</button>
+          <button type="button" data-lang="es" aria-pressed="false" lang="es">ES</button>
+        </div>
+        <button type="button" class="icon-btn" id="themeToggle" data-i18n-aria="theme.toggle" aria-label="Design umschalten">
+          <svg class="icon-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+          <svg class="icon-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main">
+    <div class="page-head">
+      <div class="tabs" role="tablist" aria-label="Módulos">
+        <button type="button" class="tab" role="tab" data-tab="water" id="tab-water" aria-selected="true" aria-controls="panel-water">
+          <svg aria-hidden="true"><use href="#i-drop"/></svg><span data-i18n="tab.water">Bewässerung &amp; Wetter</span>
+        </button>
+        <button type="button" class="tab" role="tab" data-tab="costs" id="tab-costs" aria-selected="false" aria-controls="panel-costs" tabindex="-1">
+          <svg aria-hidden="true"><use href="#i-basket"/></svg><span data-i18n="tab.costs">Ernte &amp; Kosten</span>
+        </button>
+      </div>
+      <span class="badge sample" data-i18n="badge.sample">Beispieldaten</span>
+    </div>
+
+    <!-- ===================== Modul 1 ===================== -->
+    <section id="panel-water" role="tabpanel" aria-labelledby="tab-water" class="main" style="padding:0">
+      <div>
+        <h1 class="module-title" data-i18n="water.title">Riego y Clima</h1>
+        <p class="module-sub" data-i18n="water.sub">Valencia, Carabobo · Regenzeit. Die Frage ist nicht „wann bewässern“, sondern „wann nicht“ – und wie Ernte und Pflanzen vor zu viel Wasser geschützt werden.</p>
+      </div>
+
+      <div class="kpis" id="waterKpis"></div>
+
+      <div class="card timeline-card">
+        <div class="timeline-head">
+          <div>
+            <div class="card-title" data-i18n="timeline.title">14-Tage-Szenario</div>
+            <div class="card-sub" id="timelineSub"></div>
+          </div>
+          <div class="timeline-nav">
+            <button type="button" class="icon-btn" id="dayPrev" data-i18n-aria="timeline.prev" aria-label="Vorheriger Tag"><svg aria-hidden="true"><use href="#i-chev-l"/></svg></button>
+            <button type="button" class="icon-btn" id="dayNext" data-i18n-aria="timeline.next" aria-label="Nächster Tag"><svg aria-hidden="true"><use href="#i-chev-r"/></svg></button>
+          </div>
+        </div>
+        <div class="timeline" id="timeline" role="group" data-i18n-aria="timeline.group" aria-label="Tag auswählen"></div>
+        <div class="timeline-legend">
+          <span><i class="swatch"></i><span data-i18n="timeline.legend.forecast">Tag 1–10: echte Vorhersage (AccuWeather)</span></span>
+          <span><i class="swatch dashed"></i><span data-i18n="timeline.legend.pattern">Tag 11–14: typisches Regenzeit-Muster</span></span>
+          <span data-i18n="timeline.legend.rain">Punkt = Regenwahrscheinlichkeit</span>
+        </div>
+      </div>
+
+      <div class="water-grid">
+        <div class="card" id="weatherCard">
+          <div class="card-head">
+            <div>
+              <div class="card-title" id="weatherTitle"></div>
+              <div class="card-sub" id="weatherDate"></div>
+            </div>
+            <span class="badge" id="sourceBadge"></span>
+          </div>
+          <div class="weather-now">
+            <div class="weather-icon" id="weatherIcon"></div>
+            <div>
+              <div class="weather-temp"><span id="tempMax"></span><small id="tempMin"></small></div>
+              <div class="weather-cond" id="weatherCond"></div>
+              <div class="weather-meta" id="weatherMeta"></div>
+            </div>
+          </div>
+          <div>
+            <div class="card-sub" style="margin-bottom:.45rem" data-i18n="weather.next5">Nächste 5 Tage</div>
+            <div class="strip" id="strip"></div>
+          </div>
+        </div>
+
+        <div class="card reco-card" id="recoCard">
+          <div class="card-head">
+            <div>
+              <div class="card-title" id="recoPlotName"></div>
+              <div class="card-sub" id="recoPlotType"></div>
+            </div>
+            <span class="badge" id="recoPlotBadge"></span>
+          </div>
+
+          <div class="reco-main" id="recoMain"></div>
+
+          <div class="moisture" id="moisture"></div>
+
+          <div class="reco-actions" id="recoActions"></div>
+
+          <div id="diseaseAlert"></div>
+          <div id="harvestAlert"></div>
+
+          <div>
+            <div class="card-sub" style="margin-bottom:.45rem" data-i18n="compare.title">Alle Plots am gewählten Tag</div>
+            <div class="compare" id="compare"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== Modul 2 ===================== -->
+    <section id="panel-costs" role="tabpanel" aria-labelledby="tab-costs" class="main" style="padding:0" hidden>
+      <div>
+        <h1 class="module-title" data-i18n="costs.title">Cosecha y Costos</h1>
+        <p class="module-sub" data-i18n="costs.sub">Tomate „Río Grande“, 11.000 Pflanzen, Saison 2026 · alle Beträge in USD. Ernte und Ausgaben erfassen, Kosten pro Kilo und Marge sofort sehen.</p>
+      </div>
+
+      <div class="kpis" id="costKpis"></div>
+
+      <div class="costs-grid">
+        <div style="display:flex;flex-direction:column;gap:1.1rem;min-width:0">
+          <div class="charts">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title" data-i18n="chart.harvest.title">Erntemenge über Zeit</div>
+                  <div class="card-sub" data-i18n="chart.harvest.sub">kg pro Erntetag, alle Plots</div>
+                </div>
+              </div>
+              <div class="chart-wrap" id="harvestChart"></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title" data-i18n="chart.costs.title">Kosten nach Kategorie</div>
+                  <div class="card-sub" data-i18n="chart.costs.sub">Anteil an den Gesamtkosten</div>
+                </div>
+              </div>
+              <div class="donut-layout">
+                <div class="chart-wrap" id="costDonut"></div>
+                <div class="legend" id="costLegend"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tables">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title" data-i18n="table.harvest.title">Ernte-Einträge</div>
+                  <div class="card-sub" id="harvestCount"></div>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table id="harvestTable">
+                  <thead><tr>
+                    <th data-i18n="col.date">Datum</th>
+                    <th data-i18n="col.plot">Plot</th>
+                    <th class="num" data-i18n="col.kg">kg</th>
+                    <th data-i18n="col.quality">Qualität</th>
+                  </tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title" data-i18n="table.costs.title">Kosten-Einträge</div>
+                  <div class="card-sub" id="costCount"></div>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table id="costTable">
+                  <thead><tr>
+                    <th data-i18n="col.date">Datum</th>
+                    <th data-i18n="col.category">Kategorie</th>
+                    <th data-i18n="col.note">Notiz</th>
+                    <th class="num" data-i18n="col.amount">USD</th>
+                  </tr></thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:1.1rem;min-width:0">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title" data-i18n="price.title">Verkaufspreis</div>
+                <div class="card-sub" data-i18n="price.sub">Ab Hof, USD pro kg – Kennzahlen reagieren sofort</div>
+              </div>
+            </div>
+            <div class="price-row">
+              <label for="priceInput" data-i18n="price.label">Preis Qualität A</label>
+              <span class="field"><span class="unit">$</span><input type="number" id="priceInput" min="0" step="0.05" value="0.70" inputmode="decimal"><span class="unit">/kg</span></span>
+            </div>
+            <p class="price-note" data-i18n="price.note">Qualität B wird mit 80 %, Qualität C mit 50 % des A-Preises bewertet.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title" data-i18n="form.title">Eintrag hinzufügen</div>
+                <div class="card-sub" data-i18n="form.sub">Wird sofort in Tabelle, Kennzahlen und Diagramme übernommen</div>
+              </div>
+            </div>
+            <div class="segmented" role="group" id="entryTypeSwitch" data-i18n-aria="form.type" aria-label="Eintragstyp">
+              <button type="button" data-type="harvest" aria-pressed="true" data-i18n="form.type.harvest">Ernte</button>
+              <button type="button" data-type="cost" aria-pressed="false" data-i18n="form.type.cost">Kosten</button>
+            </div>
+
+            <form id="entryForm" novalidate>
+              <div class="form-grid">
+                <div class="form-field">
+                  <label for="fDate" data-i18n="col.date">Datum</label>
+                  <span class="field"><input type="date" id="fDate" required></span>
+                </div>
+
+                <div class="form-field" data-for="harvest">
+                  <label for="fPlot" data-i18n="col.plot">Plot</label>
+                  <span class="field"><select id="fPlot">
+                    <option value="norte">Lote Norte</option>
+                    <option value="sur">Lote Sur</option>
+                    <option value="inv1">Invernadero 1</option>
+                  </select></span>
+                </div>
+                <div class="form-field" data-for="harvest">
+                  <label for="fKg" data-i18n="form.kg">Menge (kg)</label>
+                  <span class="field"><input type="number" id="fKg" min="1" step="1" placeholder="120" inputmode="numeric"></span>
+                </div>
+                <div class="form-field" data-for="harvest">
+                  <label for="fQuality" data-i18n="col.quality">Qualität</label>
+                  <span class="field"><select id="fQuality">
+                    <option value="A" data-i18n="quality.A">A – Erste Wahl</option>
+                    <option value="B" data-i18n="quality.B">B – Zweite Wahl</option>
+                    <option value="C" data-i18n="quality.C">C – Verarbeitung</option>
+                  </select></span>
+                </div>
+
+                <div class="form-field" data-for="cost" hidden>
+                  <label for="fCategory" data-i18n="col.category">Kategorie</label>
+                  <span class="field"><select id="fCategory">
+                    <option value="seed" data-i18n="cat.seed">Saatgut</option>
+                    <option value="inputs" data-i18n="cat.inputs">Betriebsmittel</option>
+                    <option value="labor" data-i18n="cat.labor">Arbeitskraft</option>
+                    <option value="fuel" data-i18n="cat.fuel">Treibstoff</option>
+                  </select></span>
+                </div>
+                <div class="form-field" data-for="cost" hidden>
+                  <label for="fAmount" data-i18n="form.amount">Betrag (USD)</label>
+                  <span class="field"><span class="unit">$</span><input type="number" id="fAmount" min="0.01" step="0.01" placeholder="85.00" inputmode="decimal"></span>
+                </div>
+                <div class="form-field full" data-for="cost" hidden>
+                  <label for="fNote" data-i18n="col.note">Notiz</label>
+                  <span class="field"><input type="text" id="fNote" maxlength="60" data-i18n-placeholder="form.note.ph" placeholder="z. B. Diesel für die Pumpe"></span>
+                </div>
+              </div>
+              <div class="form-actions" style="margin-top:.9rem">
+                <span class="form-feedback" id="formFeedback" aria-live="polite"></span>
+                <button type="submit" class="btn btn-earth"><svg aria-hidden="true"><use href="#i-plus"/></svg><span data-i18n="form.submit">Hinzufügen</span></button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span data-i18n="footer.left">Conuco · Demo-MVP · Wetterdaten: AccuWeather-Vorhersage Valencia (Tag 1–10) + Klimamuster (Tag 11–14)</span>
+      <span data-i18n="footer.right">Für kleine Betriebe gebaut: USD, offline-tauglich, ohne Schnickschnack.</span>
+    </div>
+  </footer>
+
+  <div class="tooltip" id="tooltip" role="status" aria-hidden="true"></div>
+
+<script>
+// Automatisch aus data/wetter-14-tage.json erzeugt (1:1), damit die Demo auch per file:// ohne Server läuft.
+// Quelle der Wahrheit bleibt die JSON-Datei. Neu erzeugen: node -e "..." (siehe README).
+window.CONUCO_WEATHER = {
+  "location": "Valencia, Carabobo, Venezuela",
+  "generatedFor": "2026-09-07",
+  "note": "Tage 1-10: echte AccuWeather-Vorhersage. Tage 11-14: typisches Regenzeit-Muster (keine echte Vorhersage), siehe wetter-szenario-14-tage.md",
+  "days": [
+    {"day": 1, "date": "2026-09-07", "tempMaxC": 34, "tempMinC": 22, "rainProbabilityPercent": 60, "condition": "Zeitweise sonnig, dann bewölkt und heiß, nachmittags Regen möglich", "source": "forecast", "irrigationOpenField": "reduziert", "irrigationGreenhouse": "normal", "diseaseRiskFlag": true, "harvestNote": "Vor Mittag ernten - Nachmittagsregen wahrscheinlich"},
+    {"day": 2, "date": "2026-09-08", "tempMaxC": 35, "tempMinC": 22, "rainProbabilityPercent": 88, "condition": "Warm, vereinzelte Nachmittagsschauer", "source": "forecast", "irrigationOpenField": "keine", "irrigationGreenhouse": "normal", "diseaseRiskFlag": true, "harvestNote": "Vor Mittag ernten - hohe Regenwahrscheinlichkeit, Erntegut sofort kühlen/verarbeiten"},
+    {"day": 3, "date": "2026-09-09", "tempMaxC": 34, "tempMinC": 22, "rainProbabilityPercent": 62, "condition": "Warm, zeitweise sonnig, später bewölkt mit Nachmittagsregen", "source": "forecast", "irrigationOpenField": "reduziert", "irrigationGreenhouse": "normal", "diseaseRiskFlag": true, "harvestNote": "Vor Mittag ernten - Nachmittagsregen wahrscheinlich"},
+    {"day": 4, "date": "2026-09-10", "tempMaxC": 32, "tempMinC": 21, "rainProbabilityPercent": 59, "condition": "Überwiegend bedeckt, mögliche Schauer", "source": "forecast", "irrigationOpenField": "reduziert", "irrigationGreenhouse": "normal", "diseaseRiskFlag": false, "harvestNote": "Normales Erntefenster, Regen möglich"},
+    {"day": 5, "date": "2026-09-11", "tempMaxC": 34, "tempMinC": 23, "rainProbabilityPercent": 60, "condition": "Bewölkt, Regen wahrscheinlich, Gewitter möglich", "source": "forecast", "irrigationOpenField": "reduziert", "irrigationGreenhouse": "normal", "diseaseRiskFlag": true, "harvestNote": "Vor Mittag ernten - Gewitter am Nachmittag möglich"},
+    {"day": 6, "date": "2026-09-12", "tempMaxC": 33, "tempMinC": 22, "rainProbabilityPercent": 91, "condition": "Anhaltende Regenperioden", "source": "forecast", "irrigationOpenField": "keine", "irrigationGreenhouse": "normal", "diseaseRiskFlag": true, "harvestNote": "Sehr nass - Staunässe/Lote pruefen, Ernte falls moeglich frueh und vorsichtig"},
+    {"day": 7, "date": "2026-09-13", "tempMaxC": 33, "tempMinC": 22, "rainProbabilityPercent": 61, "condition": "Bewölkt; morgens und nachmittags Gewitter möglich", "source": "forecast", "irrigationOpenField": "reduziert", "irrigationGreenhouse": "normal", "diseaseRiskFlag": true, "harvestNote": "Enges Erntefenster - Gewitter auch am Morgen moeglich"},
+    {"day": 8, "date": "2026-09-14", "tempMaxC": 32, "tempMinC": 22, "rainProbabilityPercent": 56, "condition": "Dunkel bedeckt, Regen- und Gewitterrisiko", "source": "forecast", "irrigationOpenField": "reduziert", "irrigationGreenhouse": "normal", "diseaseRiskFlag": false, "harvestNote": "Relativ guenstiges Fenster fuer Feldarbeiten"},
+    {"day": 9, "date": "2026-09-15", "tempMaxC": 32, "tempMinC": 22, "rainProbabilityPercent": 59, "condition": "Stark bewölkt, mögliche Schauer", "source": "forecast", "irrigationOpenField": "reduziert", "irrigationGreenhouse": "normal", "diseaseRiskFlag": false, "harvestNote": "Normales Erntefenster, Regen möglich"},
+    {"day": 10, "date": "2026-09-16", "tempMaxC": 33, "tempMinC": 21, "rainProbabilityPercent": 59, "condition": "Überwiegend bewölkt, Regen möglich", "source": "forecast", "irrigationOpenField": "reduziert", "irrigationGreenhouse": "normal", "diseaseRiskFlag": false, "harvestNote": "Normales Erntefenster, Regen möglich"},
+    {"day": 11, "date": "2026-09-17", "tempMaxC": 33, "tempMinC": 22, "rainProbabilityPercent": 60, "condition": "Bewölkt mit Nachmittagsschauern (typisches Muster)", "source": "climatological_pattern", "irrigationOpenField": "reduziert", "irrigationGreenhouse": "normal", "diseaseRiskFlag": true, "harvestNote": "Vor Mittag ernten - Nachmittagsregen wahrscheinlich"},
+    {"day": 12, "date": "2026-09-18", "tempMaxC": 32, "tempMinC": 21, "rainProbabilityPercent": 65, "condition": "Stärkere Schauer möglich, hohe Luftfeuchtigkeit (typisches Muster)", "source": "climatological_pattern", "irrigationOpenField": "reduziert", "irrigationGreenhouse": "normal", "diseaseRiskFlag": true, "harvestNote": "Vor Mittag ernten - hohe Luftfeuchtigkeit, Pilzrisiko beachten"},
+    {"day": 13, "date": "2026-09-19", "tempMaxC": 33, "tempMinC": 22, "rainProbabilityPercent": 55, "condition": "Teils sonnig, Nachmittagsgewitter möglich (typisches Muster)", "source": "climatological_pattern", "irrigationOpenField": "reduziert", "irrigationGreenhouse": "normal", "diseaseRiskFlag": false, "harvestNote": "Relativ guenstiges Fenster fuer Feldarbeiten"},
+    {"day": 14, "date": "2026-09-20", "tempMaxC": 32, "tempMinC": 21, "rainProbabilityPercent": 60, "condition": "Bewölkt, weiterhin hohe Regenwahrscheinlichkeit (typisches Muster)", "source": "climatological_pattern", "irrigationOpenField": "reduziert", "irrigationGreenhouse": "normal", "diseaseRiskFlag": true, "harvestNote": "Vor Mittag ernten - Nachmittagsregen wahrscheinlich"}
+  ]
+};
+
+// Conuco – Übersetzungs-Dictionary (DE Standard / ES). Ein Markup, Texte werden live getauscht.
+window.CONUCO_I18N = {
+  de: {
+    "brand.tag": "Finca de Jesús · Valencia, Carabobo",
+    "theme.toggle": "Hell/Dunkel umschalten",
+    "tab.water": "Bewässerung & Wetter",
+    "tab.costs": "Ernte & Kosten",
+    "badge.sample": "Beispieldaten",
+
+    "water.title": "Riego y Clima",
+    "water.sub": "Valencia, Carabobo · Regenzeit. Die Frage ist nicht „wann bewässern“, sondern „wann nicht“ – und wie Ernte und Pflanzen vor zu viel Wasser geschützt werden.",
+
+    "kpi.rain": "Regenwahrscheinlichkeit",
+    "kpi.rain.ok": "vergleichsweise trocken",
+    "kpi.rain.warn": "Regen wahrscheinlich",
+    "kpi.rain.crit": "Starkregen erwartet",
+    "kpi.moisture": "Bodenfeuchte",
+    "kpi.moisture.low": "zu trocken",
+    "kpi.moisture.ok": "im Zielbereich",
+    "kpi.moisture.high": "gesättigt – Staunässe",
+    "kpi.irrigation": "Bewässerung heute",
+    "kpi.disease": "Krankheitsrisiko",
+    "kpi.disease.low": "gering (überdacht)",
+    "kpi.disease.mod": "moderat",
+    "kpi.disease.high": "hoch – Pilzdruck",
+    "kpi.sensor": "Sensor",
+    "kpi.disease.status.field": "Luftfeuchte anhaltend hoch",
+    "kpi.disease.status.gh": "Blätter bleiben trocken",
+
+    "timeline.title": "14-Tage-Szenario",
+    "timeline.sub": "Tag {day} von 14 · {date}",
+    "timeline.prev": "Vorheriger Tag",
+    "timeline.next": "Nächster Tag",
+    "timeline.group": "Tag auswählen",
+    "timeline.legend.forecast": "Tag 1–10: echte Vorhersage (AccuWeather)",
+    "timeline.legend.pattern": "Tag 11–14: typisches Regenzeit-Muster",
+    "timeline.legend.rain": "Punkt = Regenwahrscheinlichkeit",
+    "timeline.chip": "Tag {day}, {date}, Regen {rain} %",
+
+    "weather.title": "Wetter · Valencia, Carabobo",
+    "weather.today": "Heute",
+    "weather.day": "Tag {day}",
+    "weather.next5": "Nächste 5 Tage",
+    "weather.rain": "Regen",
+    "weather.min": "Tiefstwert",
+    "weather.humidity": "Luftfeuchte",
+    "weather.source.forecast": "Vorhersage",
+    "weather.source.pattern": "Klimamuster",
+
+    "plot.field": "Freiland",
+    "plot.greenhouse": "Gewächshaus",
+    "plot.field.desc": "Freiland · Tropfbewässerung · {n} Pflanzen",
+    "plot.greenhouse.desc": "Gewächshaus · überdacht · Tropfbewässerung · {n} Pflanzen",
+    "plot.badge.field": "Regen wirkt direkt",
+    "plot.badge.greenhouse": "Regen wirkt nicht",
+
+    "reco.kicker": "Empfehlung",
+    "reco.none.title": "Nicht bewässern",
+    "reco.none.why": "Regenwahrscheinlichkeit {rain} % – der Boden ist bereits gesättigt. Jede zusätzliche Wassergabe erhöht nur das Risiko von Staunässe und Wurzelfäule. Drainage prüfen.",
+    "reco.reduced.title": "Reduziert bewässern",
+    "reco.reduced.why": "Regenwahrscheinlichkeit {rain} % – Boden feucht. Nur bei Bedarf kurz nachwässern (max. 50 % der üblichen Menge), sonst aussetzen.",
+    "reco.normal.title": "Normal bewässern",
+    "reco.normal.why": "Das Dach hält den Regen komplett ab. Die Pflanzen im Gewächshaus bekommen nichts vom Wetter draußen – Bewässerung läuft nach Zeitplan weiter, unabhängig von der Regenwahrscheinlichkeit.",
+    "reco.now.title": "Jetzt bewässern",
+    "reco.now.why": "Bodenfeuchte im Gewächshaus bei {moist} % – unter dem Zielbereich. Trotz {rain} % Regen draußen: Das Dach hält alles ab, die Pflanzen brauchen Wasser.",
+    "reco.done.title": "Heute bewässert",
+    "reco.done.why": "Bewässerung für diesen Tag erfasst. Bodenfeuchte wieder im Zielbereich.",
+    "reco.done.field.why": "Bewässerung erfasst – entgegen der Empfehlung. Bei {rain} % Regenwahrscheinlichkeit Staunässe im Blick behalten.",
+
+    "moisture.label": "Bodenfeuchte (Sensor, Mock)",
+    "moisture.target": "Ziel 45–65 %",
+    "moisture.dry": "trocken",
+    "moisture.wet": "gesättigt",
+
+    "action.mark": "Heute als bewässert markieren",
+    "action.undo": "Rückgängig",
+    "action.hint.done": "Eingetragen für {date}",
+    "action.hint.none": "Eintrag nur, wenn tatsächlich bewässert wurde",
+
+    "disease.title": "Pilzrisiko hoch",
+    "disease.body": "Anhaltend hohe Luftfeuchtigkeit begünstigt Kraut- und Braunfäule sowie Blattflecken. Bestand kontrollieren, Blätter trocken halten, Kupfer-Behandlung vormittags prüfen.",
+    "disease.mod.title": "Pilzrisiko moderat",
+    "disease.mod.body": "Etwas trockeneres Fenster – Bestand weiter beobachten, Feuchte bleibt hoch.",
+    "disease.gh.title": "Pilzrisiko gering",
+    "disease.gh.body": "Überdacht: Blätter bleiben trocken. Auf gute Lüftung achten.",
+
+    "harvest.title": "Ernte-Hinweis",
+    "harvest.chain": "Keine verlässliche Kühlkette voraussetzen – sofort verkaufen oder kühlen.",
+
+    "compare.title": "Alle Plots am gewählten Tag",
+    "compare.moist": "{m} % Feuchte",
+
+    "irr.keine": "Nicht bewässern",
+    "irr.reduziert": "Reduziert",
+    "irr.normal": "Normal",
+    "irr.now": "Jetzt bewässern",
+    "irr.done": "Bewässert",
+
+    "costs.title": "Cosecha y Costos",
+    "costs.sub": "Tomate „Río Grande“, 11.000 Pflanzen, Saison 2026 · alle Beträge in USD. Ernte und Ausgaben erfassen, Kosten pro Kilo und Marge sofort sehen.",
+    "kpi.harvest": "Gesamternte",
+    "kpi.harvest.status": "{a} % Qualität A · {kgp} kg pro Pflanze",
+    "kpi.cost": "Gesamtkosten",
+    "kpi.cost.status": "{n} Einträge · größter Posten: {cat}",
+    "kpi.costkg": "Kosten pro kg",
+    "kpi.costkg.ok": "unter Verkaufspreis",
+    "kpi.costkg.crit": "über Verkaufspreis",
+    "kpi.margin": "Geschätzte Marge",
+    "kpi.margin.status": "Umsatz {rev} bei {price}/kg",
+    "kpi.margin.neg": "Verlust bei {price}/kg",
+
+    "chart.harvest.title": "Erntemenge über Zeit",
+    "chart.harvest.sub": "kg pro Erntetag, alle Plots",
+    "chart.costs.title": "Kosten nach Kategorie",
+    "chart.costs.sub": "Anteil an den Gesamtkosten",
+    "chart.total": "gesamt",
+
+    "table.harvest.title": "Ernte-Einträge",
+    "table.costs.title": "Kosten-Einträge",
+    "table.count": "{n} Einträge",
+    "col.date": "Datum",
+    "col.plot": "Plot",
+    "col.kg": "kg",
+    "col.quality": "Qualität",
+    "col.category": "Kategorie",
+    "col.note": "Notiz",
+    "col.amount": "USD",
+
+    "quality.A": "A – Erste Wahl",
+    "quality.B": "B – Zweite Wahl",
+    "quality.C": "C – Verarbeitung",
+    "quality.short.A": "A",
+    "quality.short.B": "B",
+    "quality.short.C": "C",
+
+    "cat.seed": "Saatgut",
+    "cat.inputs": "Betriebsmittel",
+    "cat.labor": "Arbeitskraft",
+    "cat.fuel": "Treibstoff",
+
+    "price.title": "Verkaufspreis",
+    "price.sub": "Ab Hof, USD pro kg – Kennzahlen reagieren sofort",
+    "price.label": "Preis Qualität A",
+    "price.note": "Qualität B wird mit 80 %, Qualität C mit 50 % des A-Preises bewertet.",
+
+    "form.title": "Eintrag hinzufügen",
+    "form.sub": "Wird sofort in Tabelle, Kennzahlen und Diagramme übernommen",
+    "form.type": "Eintragstyp",
+    "form.type.harvest": "Ernte",
+    "form.type.cost": "Kosten",
+    "form.kg": "Menge (kg)",
+    "form.amount": "Betrag (USD)",
+    "form.note.ph": "z. B. Diesel für die Pumpe",
+    "form.submit": "Hinzufügen",
+    "form.ok.harvest": "Ernte erfasst: {kg} kg, {plot}",
+    "form.ok.cost": "Kosten erfasst: {amt}",
+    "form.err.date": "Bitte ein Datum angeben.",
+    "form.err.kg": "Bitte eine Menge über 0 kg angeben.",
+    "form.err.amount": "Bitte einen Betrag über 0 angeben.",
+
+    "note.seed": "Semilla Río Grande, 11.000 Pflanzen",
+    "note.fert": "Dünger NPK + Kalzium",
+    "note.plant": "Pflanzung (12 Tagelöhner)",
+    "note.diesel": "Diesel Pumpe",
+    "note.fung": "Fungizid (Kupfer)",
+    "note.care": "Ausgeizen, Aufbinden",
+    "note.transport": "Transport zum Markt",
+    "note.harvest": "Erntehelfer",
+    "note.crates": "Kisten",
+
+    "footer.left": "Conuco · Demo für Jesús · Wetterdaten: AccuWeather-Vorhersage Valencia (Tag 1–10) + Klimamuster (Tag 11–14)",
+    "footer.right": "Für kleine Betriebe gebaut: USD, offline-tauglich, ohne Schnickschnack.",
+
+    // Wetterbedingungen aus der JSON (Schlüssel = Originaltext)
+    cond: {
+      "Zeitweise sonnig, dann bewölkt und heiß, nachmittags Regen möglich": "Zeitweise sonnig, dann bewölkt und heiß, nachmittags Regen möglich",
+      "Warm, vereinzelte Nachmittagsschauer": "Warm, vereinzelte Nachmittagsschauer",
+      "Warm, zeitweise sonnig, später bewölkt mit Nachmittagsregen": "Warm, zeitweise sonnig, später bewölkt mit Nachmittagsregen",
+      "Überwiegend bedeckt, mögliche Schauer": "Überwiegend bedeckt, mögliche Schauer",
+      "Bewölkt, Regen wahrscheinlich, Gewitter möglich": "Bewölkt, Regen wahrscheinlich, Gewitter möglich",
+      "Anhaltende Regenperioden": "Anhaltende Regenperioden",
+      "Bewölkt; morgens und nachmittags Gewitter möglich": "Bewölkt; morgens und nachmittags Gewitter möglich",
+      "Dunkel bedeckt, Regen- und Gewitterrisiko": "Dunkel bedeckt, Regen- und Gewitterrisiko",
+      "Stark bewölkt, mögliche Schauer": "Stark bewölkt, mögliche Schauer",
+      "Überwiegend bewölkt, Regen möglich": "Überwiegend bewölkt, Regen möglich",
+      "Bewölkt mit Nachmittagsschauern (typisches Muster)": "Bewölkt mit Nachmittagsschauern",
+      "Stärkere Schauer möglich, hohe Luftfeuchtigkeit (typisches Muster)": "Stärkere Schauer möglich, hohe Luftfeuchtigkeit",
+      "Teils sonnig, Nachmittagsgewitter möglich (typisches Muster)": "Teils sonnig, Nachmittagsgewitter möglich",
+      "Bewölkt, weiterhin hohe Regenwahrscheinlichkeit (typisches Muster)": "Bewölkt, weiterhin hohe Regenwahrscheinlichkeit"
+    },
+    // Ernte-Hinweise aus der JSON (Schlüssel = Originaltext)
+    harvest: {
+      "Vor Mittag ernten - Nachmittagsregen wahrscheinlich": "Vor Mittag ernten – Nachmittagsregen wahrscheinlich.",
+      "Vor Mittag ernten - hohe Regenwahrscheinlichkeit, Erntegut sofort kühlen/verarbeiten": "Vor Mittag ernten – hohe Regenwahrscheinlichkeit. Erntegut sofort kühlen oder verarbeiten.",
+      "Normales Erntefenster, Regen möglich": "Normales Erntefenster, Regen möglich.",
+      "Vor Mittag ernten - Gewitter am Nachmittag möglich": "Vor Mittag ernten – Gewitter am Nachmittag möglich.",
+      "Sehr nass - Staunässe/Lote pruefen, Ernte falls moeglich frueh und vorsichtig": "Sehr nass – Staunässe auf den Lotes prüfen. Ernte, falls möglich, früh und vorsichtig.",
+      "Enges Erntefenster - Gewitter auch am Morgen moeglich": "Enges Erntefenster – Gewitter auch am Morgen möglich.",
+      "Relativ guenstiges Fenster fuer Feldarbeiten": "Relativ günstiges Fenster für Feldarbeiten.",
+      "Vor Mittag ernten - hohe Luftfeuchtigkeit, Pilzrisiko beachten": "Vor Mittag ernten – hohe Luftfeuchtigkeit, Pilzrisiko beachten."
+    }
+  },
+
+  es: {
+    "brand.tag": "Finca de Jesús · Valencia, Carabobo",
+    "theme.toggle": "Cambiar claro/oscuro",
+    "tab.water": "Riego y Clima",
+    "tab.costs": "Cosecha y Costos",
+    "badge.sample": "Datos de ejemplo",
+
+    "water.title": "Riego y Clima",
+    "water.sub": "Valencia, Carabobo · temporada de lluvias. La pregunta no es «cuándo regar», sino «cuándo no» – y cómo proteger la cosecha y las plantas del exceso de agua.",
+
+    "kpi.rain": "Probabilidad de lluvia",
+    "kpi.rain.ok": "relativamente seco",
+    "kpi.rain.warn": "lluvia probable",
+    "kpi.rain.crit": "lluvia fuerte prevista",
+    "kpi.moisture": "Humedad del suelo",
+    "kpi.moisture.low": "demasiado seco",
+    "kpi.moisture.ok": "en rango objetivo",
+    "kpi.moisture.high": "saturado – encharcamiento",
+    "kpi.irrigation": "Riego de hoy",
+    "kpi.disease": "Riesgo de enfermedad",
+    "kpi.disease.low": "bajo (bajo techo)",
+    "kpi.disease.mod": "moderado",
+    "kpi.disease.high": "alto – presión de hongos",
+    "kpi.sensor": "Sensor",
+    "kpi.disease.status.field": "Humedad alta y persistente",
+    "kpi.disease.status.gh": "El follaje se mantiene seco",
+
+    "timeline.title": "Escenario de 14 días",
+    "timeline.sub": "Día {day} de 14 · {date}",
+    "timeline.prev": "Día anterior",
+    "timeline.next": "Día siguiente",
+    "timeline.group": "Seleccionar día",
+    "timeline.legend.forecast": "Días 1–10: pronóstico real (AccuWeather)",
+    "timeline.legend.pattern": "Días 11–14: patrón típico de temporada de lluvias",
+    "timeline.legend.rain": "Punto = probabilidad de lluvia",
+    "timeline.chip": "Día {day}, {date}, lluvia {rain} %",
+
+    "weather.title": "Clima · Valencia, Carabobo",
+    "weather.today": "Hoy",
+    "weather.day": "Día {day}",
+    "weather.next5": "Próximos 5 días",
+    "weather.rain": "Lluvia",
+    "weather.min": "Mínima",
+    "weather.humidity": "Humedad",
+    "weather.source.forecast": "Pronóstico",
+    "weather.source.pattern": "Patrón climático",
+
+    "plot.field": "Campo abierto",
+    "plot.greenhouse": "Invernadero",
+    "plot.field.desc": "Campo abierto · riego por goteo · {n} plantas",
+    "plot.greenhouse.desc": "Invernadero · bajo techo · riego por goteo · {n} plantas",
+    "plot.badge.field": "La lluvia afecta directo",
+    "plot.badge.greenhouse": "La lluvia no afecta",
+
+    "reco.kicker": "Recomendación",
+    "reco.none.title": "No regar",
+    "reco.none.why": "Probabilidad de lluvia {rain} % – el suelo ya está saturado. Cada riego adicional solo aumenta el riesgo de encharcamiento y pudrición de raíces. Revisar el drenaje.",
+    "reco.reduced.title": "Riego reducido",
+    "reco.reduced.why": "Probabilidad de lluvia {rain} % – suelo húmedo. Solo regar brevemente si hace falta (máx. 50 % de la dosis habitual); si no, suspender.",
+    "reco.normal.title": "Riego normal",
+    "reco.normal.why": "El techo bloquea la lluvia por completo. Las plantas del invernadero no reciben nada del clima exterior – el riego sigue según el calendario, sin importar la probabilidad de lluvia.",
+    "reco.now.title": "Regar ahora",
+    "reco.now.why": "Humedad del suelo en el invernadero: {moist} % – por debajo del rango objetivo. Aunque afuera haya {rain} % de lluvia, el techo lo bloquea todo y las plantas necesitan agua.",
+    "reco.done.title": "Regado hoy",
+    "reco.done.why": "Riego registrado para este día. Humedad del suelo de nuevo en rango.",
+    "reco.done.field.why": "Riego registrado – en contra de la recomendación. Con {rain} % de lluvia, vigilar el encharcamiento.",
+
+    "moisture.label": "Humedad del suelo (sensor, simulado)",
+    "moisture.target": "Objetivo 45–65 %",
+    "moisture.dry": "seco",
+    "moisture.wet": "saturado",
+
+    "action.mark": "Marcar hoy como regado",
+    "action.undo": "Deshacer",
+    "action.hint.done": "Registrado para {date}",
+    "action.hint.none": "Registrar solo si realmente se regó",
+
+    "disease.title": "Riesgo de hongos alto",
+    "disease.body": "La humedad alta y persistente favorece el tizón tardío y las manchas foliares. Revisar el cultivo, mantener el follaje seco y evaluar un tratamiento con cobre por la mañana.",
+    "disease.mod.title": "Riesgo de hongos moderado",
+    "disease.mod.body": "Ventana algo más seca – seguir observando el cultivo, la humedad sigue alta.",
+    "disease.gh.title": "Riesgo de hongos bajo",
+    "disease.gh.body": "Bajo techo: el follaje se mantiene seco. Cuidar la ventilación.",
+
+    "harvest.title": "Aviso de cosecha",
+    "harvest.chain": "No contar con cadena de frío confiable – vender o refrigerar de inmediato.",
+
+    "compare.title": "Todos los lotes en el día elegido",
+    "compare.moist": "{m} % humedad",
+
+    "irr.keine": "No regar",
+    "irr.reduziert": "Reducido",
+    "irr.normal": "Normal",
+    "irr.now": "Regar ahora",
+    "irr.done": "Regado",
+
+    "costs.title": "Cosecha y Costos",
+    "costs.sub": "Tomate «Río Grande», 11.000 plantas, temporada 2026 · todos los montos en USD. Registra cosecha y gastos y ve al instante el costo por kilo y el margen.",
+    "kpi.harvest": "Cosecha total",
+    "kpi.harvest.status": "{a} % calidad A · {kgp} kg por planta",
+    "kpi.cost": "Costos totales",
+    "kpi.cost.status": "{n} registros · mayor rubro: {cat}",
+    "kpi.costkg": "Costo por kg",
+    "kpi.costkg.ok": "por debajo del precio de venta",
+    "kpi.costkg.crit": "por encima del precio de venta",
+    "kpi.margin": "Margen estimado",
+    "kpi.margin.status": "Ingresos {rev} a {price}/kg",
+    "kpi.margin.neg": "Pérdida a {price}/kg",
+
+    "chart.harvest.title": "Cosecha en el tiempo",
+    "chart.harvest.sub": "kg por día de cosecha, todos los lotes",
+    "chart.costs.title": "Costos por categoría",
+    "chart.costs.sub": "Participación en los costos totales",
+    "chart.total": "total",
+
+    "table.harvest.title": "Registros de cosecha",
+    "table.costs.title": "Registros de costos",
+    "table.count": "{n} registros",
+    "col.date": "Fecha",
+    "col.plot": "Lote",
+    "col.kg": "kg",
+    "col.quality": "Calidad",
+    "col.category": "Categoría",
+    "col.note": "Nota",
+    "col.amount": "USD",
+
+    "quality.A": "A – Primera",
+    "quality.B": "B – Segunda",
+    "quality.C": "C – Industria",
+    "quality.short.A": "A",
+    "quality.short.B": "B",
+    "quality.short.C": "C",
+
+    "cat.seed": "Semillas",
+    "cat.inputs": "Insumos",
+    "cat.labor": "Mano de obra",
+    "cat.fuel": "Combustible",
+
+    "price.title": "Precio de venta",
+    "price.sub": "En finca, USD por kg – los indicadores reaccionan al instante",
+    "price.label": "Precio calidad A",
+    "price.note": "La calidad B se valora al 80 % y la calidad C al 50 % del precio A.",
+
+    "form.title": "Agregar registro",
+    "form.sub": "Se refleja de inmediato en tabla, indicadores y gráficos",
+    "form.type": "Tipo de registro",
+    "form.type.harvest": "Cosecha",
+    "form.type.cost": "Costo",
+    "form.kg": "Cantidad (kg)",
+    "form.amount": "Monto (USD)",
+    "form.note.ph": "p. ej. gasoil para la bomba",
+    "form.submit": "Agregar",
+    "form.ok.harvest": "Cosecha registrada: {kg} kg, {plot}",
+    "form.ok.cost": "Costo registrado: {amt}",
+    "form.err.date": "Indica una fecha.",
+    "form.err.kg": "Indica una cantidad mayor a 0 kg.",
+    "form.err.amount": "Indica un monto mayor a 0.",
+
+    "note.seed": "Semilla Río Grande, 11.000 plantas",
+    "note.fert": "Fertilizante NPK + calcio",
+    "note.plant": "Siembra (12 jornaleros)",
+    "note.diesel": "Gasoil bomba",
+    "note.fung": "Fungicida (cobre)",
+    "note.care": "Deschuponado, tutorado",
+    "note.transport": "Transporte al mercado",
+    "note.harvest": "Cosechadores",
+    "note.crates": "Cajas",
+
+    "footer.left": "Conuco · demo para Jesús · Datos: pronóstico AccuWeather Valencia (días 1–10) + patrón climático (días 11–14)",
+    "footer.right": "Hecho para fincas pequeñas: USD, funciona sin internet, sin complicaciones.",
+
+    cond: {
+      "Zeitweise sonnig, dann bewölkt und heiß, nachmittags Regen möglich": "Sol a ratos, luego nublado y caluroso, posible lluvia por la tarde",
+      "Warm, vereinzelte Nachmittagsschauer": "Cálido, chubascos aislados por la tarde",
+      "Warm, zeitweise sonnig, später bewölkt mit Nachmittagsregen": "Cálido, sol a ratos, luego nublado con lluvia por la tarde",
+      "Überwiegend bedeckt, mögliche Schauer": "Mayormente cubierto, posibles chubascos",
+      "Bewölkt, Regen wahrscheinlich, Gewitter möglich": "Nublado, lluvia probable, posibles tormentas",
+      "Anhaltende Regenperioden": "Períodos de lluvia persistente",
+      "Bewölkt; morgens und nachmittags Gewitter möglich": "Nublado; posibles tormentas por la mañana y la tarde",
+      "Dunkel bedeckt, Regen- und Gewitterrisiko": "Muy cubierto, riesgo de lluvia y tormentas",
+      "Stark bewölkt, mögliche Schauer": "Muy nublado, posibles chubascos",
+      "Überwiegend bewölkt, Regen möglich": "Mayormente nublado, posible lluvia",
+      "Bewölkt mit Nachmittagsschauern (typisches Muster)": "Nublado con chubascos por la tarde",
+      "Stärkere Schauer möglich, hohe Luftfeuchtigkeit (typisches Muster)": "Posibles chubascos fuertes, humedad alta",
+      "Teils sonnig, Nachmittagsgewitter möglich (typisches Muster)": "Parcialmente soleado, posibles tormentas por la tarde",
+      "Bewölkt, weiterhin hohe Regenwahrscheinlichkeit (typisches Muster)": "Nublado, sigue alta la probabilidad de lluvia"
+    },
+    harvest: {
+      "Vor Mittag ernten - Nachmittagsregen wahrscheinlich": "Cosechar antes del mediodía – lluvia probable por la tarde.",
+      "Vor Mittag ernten - hohe Regenwahrscheinlichkeit, Erntegut sofort kühlen/verarbeiten": "Cosechar antes del mediodía – alta probabilidad de lluvia. Refrigerar o procesar la cosecha de inmediato.",
+      "Normales Erntefenster, Regen möglich": "Ventana de cosecha normal, posible lluvia.",
+      "Vor Mittag ernten - Gewitter am Nachmittag möglich": "Cosechar antes del mediodía – posibles tormentas por la tarde.",
+      "Sehr nass - Staunässe/Lote pruefen, Ernte falls moeglich frueh und vorsichtig": "Muy húmedo – revisar encharcamiento en los lotes. Cosechar, si es posible, temprano y con cuidado.",
+      "Enges Erntefenster - Gewitter auch am Morgen moeglich": "Ventana de cosecha estrecha – posibles tormentas también por la mañana.",
+      "Relativ guenstiges Fenster fuer Feldarbeiten": "Ventana relativamente favorable para labores de campo.",
+      "Vor Mittag ernten - hohe Luftfeuchtigkeit, Pilzrisiko beachten": "Cosechar antes del mediodía – humedad alta, atención al riesgo de hongos."
+    }
+  }
+};
+
+/* Conuco – Demo-MVP. Reines Vanilla-JS, In-Memory-State, kein Backend. */
+(function () {
+  'use strict';
+
+  const I18N = window.CONUCO_I18N;
+  let WEATHER = window.CONUCO_WEATHER;
+
+  // ---------------------------------------------------------------------------
+  // Stammdaten & Beispieldaten
+  // ---------------------------------------------------------------------------
+  const PLOTS = {
+    norte: { id: 'norte', name: 'Lote Norte', type: 'field', plants: 5000 },
+    sur:   { id: 'sur',   name: 'Lote Sur',   type: 'field', plants: 4500 },
+    inv1:  { id: 'inv1',  name: 'Invernadero 1', type: 'greenhouse', plants: 1500 }
+  };
+  // Feste Serien-Reihenfolge (farbenblind-validiert): Arbeitskraft, Betriebsmittel, Treibstoff, Saatgut
+  const CATEGORIES = [
+    { id: 'labor',  color: 'var(--series-labor)' },
+    { id: 'inputs', color: 'var(--series-inputs)' },
+    { id: 'fuel',   color: 'var(--series-fuel)' },
+    { id: 'seed',   color: 'var(--series-seed)' }
+  ];
+  const QUALITY_FACTOR = { A: 1, B: 0.8, C: 0.5 };
+  const MOIST_TARGET = { min: 45, max: 65 };
+  const TOTAL_PLANTS = 11000;
+
+  let nextId = 1;
+  const uid = () => nextId++;
+
+  const state = {
+    lang: 'de',
+    tab: 'water',
+    plot: 'norte',
+    day: 1,
+    irrigated: {},           // "plot:day" -> true
+    price: 0.70,
+    entryType: 'harvest',
+    harvest: [
+      { id: uid(), date: '2026-08-24', plot: 'norte', kg: 1450, quality: 'A' },
+      { id: uid(), date: '2026-08-25', plot: 'sur',   kg: 1180, quality: 'B' },
+      { id: uid(), date: '2026-08-26', plot: 'inv1',  kg: 620,  quality: 'A' },
+      { id: uid(), date: '2026-08-27', plot: 'norte', kg: 1720, quality: 'A' },
+      { id: uid(), date: '2026-08-28', plot: 'sur',   kg: 1390, quality: 'A' },
+      { id: uid(), date: '2026-08-29', plot: 'inv1',  kg: 580,  quality: 'A' },
+      { id: uid(), date: '2026-08-31', plot: 'norte', kg: 1980, quality: 'B' },
+      { id: uid(), date: '2026-09-01', plot: 'sur',   kg: 1460, quality: 'A' },
+      { id: uid(), date: '2026-09-02', plot: 'inv1',  kg: 640,  quality: 'A' },
+      { id: uid(), date: '2026-09-03', plot: 'norte', kg: 1650, quality: 'A' },
+      { id: uid(), date: '2026-09-04', plot: 'sur',   kg: 1210, quality: 'C' },
+      { id: uid(), date: '2026-09-05', plot: 'inv1',  kg: 610,  quality: 'A' },
+      { id: uid(), date: '2026-09-07', plot: 'norte', kg: 1320, quality: 'B' }
+    ],
+    costs: [
+      { id: uid(), date: '2026-07-15', category: 'seed',   noteKey: 'note.seed',      amount: 420 },
+      { id: uid(), date: '2026-07-20', category: 'inputs', noteKey: 'note.fert',      amount: 1850 },
+      { id: uid(), date: '2026-07-28', category: 'labor',  noteKey: 'note.plant',     amount: 780 },
+      { id: uid(), date: '2026-08-05', category: 'fuel',   noteKey: 'note.diesel',    amount: 310 },
+      { id: uid(), date: '2026-08-12', category: 'inputs', noteKey: 'note.fung',      amount: 640 },
+      { id: uid(), date: '2026-08-18', category: 'labor',  noteKey: 'note.care',      amount: 920 },
+      { id: uid(), date: '2026-08-25', category: 'fuel',   noteKey: 'note.transport', amount: 540 },
+      { id: uid(), date: '2026-08-30', category: 'labor',  noteKey: 'note.harvest',   amount: 1650 },
+      { id: uid(), date: '2026-09-04', category: 'inputs', noteKey: 'note.crates',    amount: 290 }
+    ]
+  };
+
+  // ---------------------------------------------------------------------------
+  // Hilfsfunktionen
+  // ---------------------------------------------------------------------------
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const locale = () => (state.lang === 'es' ? 'es-VE' : 'de-DE');
+
+  function t(key, vars) {
+    const dict = I18N[state.lang];
+    let s = (dict && dict[key] != null) ? dict[key] : (I18N.de[key] != null ? I18N.de[key] : key);
+    if (vars) for (const k in vars) s = s.split('{' + k + '}').join(String(vars[k]));
+    return s;
+  }
+  const tCond = (s) => (I18N[state.lang].cond[s] || I18N.de.cond[s] || s);
+  const tHarvest = (s) => (I18N[state.lang].harvest[s] || I18N.de.harvest[s] || s);
+
+  function parseDate(iso) { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); }
+  function fmtDate(iso, style) {
+    const d = parseDate(iso);
+    const opts = {
+      short: { day: 'numeric', month: 'numeric' },
+      medium: { day: 'numeric', month: 'short' },
+      long: { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
+      wd: { weekday: 'short' },
+      table: { day: '2-digit', month: '2-digit', year: 'numeric' }
+    }[style || 'medium'];
+    let s = new Intl.DateTimeFormat(locale(), opts).format(d);
+    if (style === 'wd') s = s.replace('.', '');
+    return s;
+  }
+  function fmtNum(n, digits) {
+    return new Intl.NumberFormat(locale(), { minimumFractionDigits: digits || 0, maximumFractionDigits: digits || 0 }).format(n);
+  }
+  const fmtUSD = (n, digits) => '$ ' + fmtNum(n, digits == null ? 0 : digits);
+  const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const icon = (id, cls) => `<svg class="${cls || ''}" aria-hidden="true"><use href="#${id}"/></svg>`;
+
+  // ---------------------------------------------------------------------------
+  // Fachlogik Modul 1
+  // ---------------------------------------------------------------------------
+  const dayData = (day) => WEATHER.days[day - 1];
+  const isIrrigated = (plotId, day) => !!state.irrigated[plotId + ':' + day];
+
+  // Mock-Sensorwert: Freiland folgt der Regenlage (heute + Vortag), Gewächshaus zehrt vom Zeitplan.
+  function moisture(plotId, day) {
+    const d = dayData(day);
+    const prev = day > 1 ? dayData(day - 1) : null;
+    const plot = PLOTS[plotId];
+    let m;
+    if (plot.type === 'field') {
+      const rain = d.rainProbabilityPercent;
+      const prevRain = prev ? prev.rainProbabilityPercent : 60;
+      m = 62 + (rain - 55) * 0.55 + (prevRain - 55) * 0.35 + (plotId === 'sur' ? 3 : 0);
+    } else {
+      m = 58 - ((day * 5) % 17);   // 42–57 %: an drei Tagen unter Ziel → "Jetzt bewässern"
+    }
+    if (isIrrigated(plotId, day)) m += plot.type === 'field' ? 8 : 18;
+    return clamp(Math.round(m), 5, 98);
+  }
+  function moistureTone(m) {
+    if (m < MOIST_TARGET.min) return 'crit';
+    if (m > MOIST_TARGET.max) return 'warn';
+    return 'ok';
+  }
+  function rainTone(p) { return p >= 85 ? 'crit' : (p >= 60 ? 'warn' : 'ok'); }
+
+  function recommendation(plotId, day) {
+    const d = dayData(day);
+    const plot = PLOTS[plotId];
+    const rain = d.rainProbabilityPercent;
+    const m = moisture(plotId, day);
+    const done = isIrrigated(plotId, day);
+    if (plot.type === 'greenhouse') {
+      if (done) return { key: 'done', tone: 'ok', icon: 'i-check', title: t('reco.done.title'), why: t('reco.done.why'), badge: t('irr.done') };
+      if (m < MOIST_TARGET.min) return { key: 'now', tone: 'crit', icon: 'i-drop', title: t('reco.now.title'), why: t('reco.now.why', { moist: m, rain }), badge: t('irr.now') };
+      return { key: 'normal', tone: 'info', icon: 'i-drop', title: t('reco.normal.title'), why: t('reco.normal.why'), badge: t('irr.normal') };
+    }
+    if (done) return { key: 'done', tone: 'warn', icon: 'i-check', title: t('reco.done.title'), why: t('reco.done.field.why', { rain }), badge: t('irr.done') };
+    if (d.irrigationOpenField === 'keine') return { key: 'none', tone: 'warn', icon: 'i-ban', title: t('reco.none.title'), why: t('reco.none.why', { rain }), badge: t('irr.keine') };
+    return { key: 'reduced', tone: 'ok', icon: 'i-drop', title: t('reco.reduced.title'), why: t('reco.reduced.why', { rain }), badge: t('irr.reduziert') };
+  }
+  function diseaseInfo(plotId, day) {
+    const d = dayData(day);
+    if (PLOTS[plotId].type === 'greenhouse') return { tone: 'ok', title: t('disease.gh.title'), body: t('disease.gh.body'), short: t('kpi.disease.low') };
+    if (d.diseaseRiskFlag) return { tone: 'crit', title: t('disease.title'), body: t('disease.body'), short: t('kpi.disease.high') };
+    return { tone: 'warn', title: t('disease.mod.title'), body: t('disease.mod.body'), short: t('kpi.disease.mod') };
+  }
+  function weatherIcon(d) {
+    const c = d.condition.toLowerCase();
+    if (d.rainProbabilityPercent >= 85 || c.includes('regenperioden')) return 'w-rain';
+    if (c.includes('gewitter')) return 'w-storm';
+    if (c.includes('sonnig')) return 'w-suncloud';
+    return 'w-cloud';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Rendering Modul 1
+  // ---------------------------------------------------------------------------
+  function kpiCard(label, value, tone, status, opts) {
+    const textValue = opts && opts.text;
+    return `<div class="kpi tone-${tone}">
+      <div class="kpi-label">${esc(label)}</div>
+      <div class="kpi-value" ${textValue ? 'style="font-family:var(--font-ui);font-size:1.25rem;font-weight:600"' : ''}>${value}</div>
+      <div class="kpi-status"><span class="pill" aria-hidden="true"></span><span>${esc(status)}</span></div>
+    </div>`;
+  }
+
+  function renderWaterKpis() {
+    const d = dayData(state.day);
+    const plot = PLOTS[state.plot];
+    const rain = d.rainProbabilityPercent;
+    const m = moisture(state.plot, state.day);
+    const mt = moistureTone(m);
+    const reco = recommendation(state.plot, state.day);
+    const dis = diseaseInfo(state.plot, state.day);
+    const rt = rainTone(rain);
+    $('#waterKpis').innerHTML =
+      kpiCard(t('kpi.rain'), `${fmtNum(rain)}<small>%</small>`, rt, t('kpi.rain.' + rt)) +
+      kpiCard(t('kpi.moisture') + ' · ' + plot.name, `${fmtNum(m)}<small>%</small>`, mt, t('kpi.moisture.' + (mt === 'crit' ? 'low' : mt === 'warn' ? 'high' : 'ok'))) +
+      kpiCard(t('kpi.irrigation') + ' · ' + plot.name, esc(reco.badge), reco.tone, t(plot.type === 'field' ? 'plot.field' : 'plot.greenhouse'), { text: true }) +
+      kpiCard(t('kpi.disease') + ' · ' + plot.name, esc(dis.short), dis.tone, t(plot.type === 'greenhouse' ? 'kpi.disease.status.gh' : 'kpi.disease.status.field'), { text: true });
+  }
+
+  function renderTimeline() {
+    const el = $('#timeline');
+    el.innerHTML = WEATHER.days.map(d => {
+      const rt = rainTone(d.rainProbabilityPercent);
+      const sel = d.day === state.day;
+      return `<button type="button" class="day-chip rp-${rt}${d.source !== 'forecast' ? ' pattern' : ''}" data-day="${d.day}" aria-pressed="${sel}"
+        aria-label="${esc(t('timeline.chip', { day: d.day, date: fmtDate(d.date, 'medium'), rain: d.rainProbabilityPercent }))}" ${sel ? '' : 'tabindex="-1"'}>
+        <span class="wd">${esc(fmtDate(d.date, 'wd'))}</span>
+        <span class="dt">${esc(fmtDate(d.date, 'short'))}</span>
+        <span class="rp">${d.rainProbabilityPercent}%</span>
+      </button>`;
+    }).join('');
+    $('#timelineSub').textContent = t('timeline.sub', { day: state.day, date: fmtDate(dayData(state.day).date, 'long') });
+    $('#dayPrev').disabled = state.day <= 1;
+    $('#dayNext').disabled = state.day >= WEATHER.days.length;
+  }
+
+  function renderWeather() {
+    const d = dayData(state.day);
+    $('#weatherTitle').textContent = t('weather.title');
+    $('#weatherDate').textContent = (state.day === 1 ? t('weather.today') : t('weather.day', { day: state.day })) + ' · ' + fmtDate(d.date, 'long');
+    const badge = $('#sourceBadge');
+    badge.className = 'badge ' + (d.source === 'forecast' ? 'tone-info' : 'sample');
+    badge.textContent = d.source === 'forecast' ? t('weather.source.forecast') : t('weather.source.pattern');
+    $('#weatherIcon').innerHTML = icon(weatherIcon(d));
+    $('#tempMax').textContent = d.tempMaxC + '°';
+    $('#tempMin').textContent = ' / ' + d.tempMinC + '°';
+    $('#weatherCond').textContent = tCond(d.condition);
+    $('#weatherMeta').innerHTML =
+      `<span>${esc(t('weather.rain'))} <b>${d.rainProbabilityPercent} %</b></span>` +
+      `<span>${esc(t('weather.min'))} <b>${d.tempMinC} °C</b></span>`;
+
+    const n = WEATHER.days.length;
+    const start = clamp(state.day, 1, n - 4);
+    $('#strip').innerHTML = WEATHER.days.slice(start - 1, start + 4).map(x => `
+      <div class="strip-day${x.day === state.day ? ' active' : ''}">
+        <span class="wd">${esc(fmtDate(x.date, 'wd'))} ${esc(fmtDate(x.date, 'short'))}</span>
+        ${icon(weatherIcon(x))}
+        <span class="t">${x.tempMaxC}° <span>${x.tempMinC}°</span></span>
+        <span class="r">${x.rainProbabilityPercent} %</span>
+      </div>`).join('');
+  }
+
+  function renderReco() {
+    const d = dayData(state.day);
+    const plot = PLOTS[state.plot];
+    const isGH = plot.type === 'greenhouse';
+    const reco = recommendation(state.plot, state.day);
+    const m = moisture(state.plot, state.day);
+    const mt = moistureTone(m);
+    const done = isIrrigated(state.plot, state.day);
+
+    const card = $('#recoCard');
+    card.classList.toggle('is-greenhouse', isGH);
+    card.classList.toggle('is-field', !isGH);
+    $('#recoPlotName').textContent = plot.name;
+    $('#recoPlotType').textContent = t(isGH ? 'plot.greenhouse.desc' : 'plot.field.desc', { n: fmtNum(plot.plants) });
+    const pb = $('#recoPlotBadge');
+    pb.className = 'badge ' + (isGH ? 'tone-info' : 'tone-accent');
+    pb.textContent = t(isGH ? 'plot.badge.greenhouse' : 'plot.badge.field');
+
+    const main = $('#recoMain');
+    main.className = 'reco-main tone-' + reco.tone;
+    main.innerHTML = `
+      <div class="reco-icon">${icon(reco.icon)}</div>
+      <div>
+        <div class="reco-kicker">${esc(t('reco.kicker'))} · ${esc(fmtDate(d.date, 'medium'))}</div>
+        <div class="reco-title">${esc(reco.title)}</div>
+        <p class="reco-why">${esc(reco.why)}</p>
+      </div>`;
+
+    $('#moisture').innerHTML = `
+      <div class="moisture-row"><span>${esc(t('moisture.label'))}</span><b>${fmtNum(m)} %</b></div>
+      <div class="meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m}" aria-label="${esc(t('moisture.label'))}">
+        <div class="meter-fill" style="width:${m}%;--meter-color:var(--${mt})"></div>
+      </div>
+      <div class="meter-marks"><span>0 · ${esc(t('moisture.dry'))}</span><span>${esc(t('moisture.target'))}</span><span>${esc(t('moisture.wet'))} · 100</span></div>`;
+
+    $('#recoActions').innerHTML = done
+      ? `<button type="button" class="btn is-done" id="markBtn">${icon('i-undo')}${esc(t('action.undo'))}</button><span class="hint">${esc(t('action.hint.done', { date: fmtDate(d.date, 'medium') }))}</span>`
+      : `<button type="button" class="btn btn-primary" id="markBtn">${icon('i-check')}${esc(t('action.mark'))}</button><span class="hint">${esc(t('action.hint.none'))}</span>`;
+    $('#markBtn').addEventListener('click', () => {
+      const k = state.plot + ':' + state.day;
+      if (state.irrigated[k]) delete state.irrigated[k]; else state.irrigated[k] = true;
+      renderWater();
+      $('#markBtn').focus();
+    });
+
+    const dis = diseaseInfo(state.plot, state.day);
+    $('#diseaseAlert').innerHTML = `<div class="alert tone-${dis.tone}">${icon(dis.tone === 'ok' ? 'i-shield' : 'i-warn')}<div><div class="alert-title">${esc(dis.title)}</div><div class="alert-body">${esc(dis.body)}</div></div></div>`;
+
+    const note = tHarvest(d.harvestNote);
+    const chain = /^(Vor Mittag|Sehr nass)/.test(d.harvestNote) ? ' ' + t('harvest.chain') : '';
+    $('#harvestAlert').innerHTML = `<div class="alert tone-earth">${icon('i-basket')}<div><div class="alert-title">${esc(t('harvest.title'))}</div><div class="alert-body">${esc(note + chain)}</div></div></div>`;
+
+    $('#compare').innerHTML = Object.values(PLOTS).map(p => {
+      const r = recommendation(p.id, state.day);
+      const pm = moisture(p.id, state.day);
+      return `<div class="compare-row${p.id === state.plot ? ' active' : ''}">
+        <span class="name"><span class="dot" style="background:var(--${p.type === 'field' ? 'accent' : 'water'})"></span>${esc(p.name)} <span class="type">${esc(t(p.type === 'field' ? 'plot.field' : 'plot.greenhouse'))}</span></span>
+        <span class="moist">${esc(t('compare.moist', { m: fmtNum(pm) }))}</span>
+        <span class="badge tone-${r.tone}">${esc(r.badge)}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function renderWater() {
+    renderWaterKpis();
+    renderTimeline();
+    renderWeather();
+    renderReco();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Fachlogik Modul 2
+  // ---------------------------------------------------------------------------
+  function costSummary() {
+    const totalKg = state.harvest.reduce((s, h) => s + h.kg, 0);
+    const kgA = state.harvest.filter(h => h.quality === 'A').reduce((s, h) => s + h.kg, 0);
+    const totalCost = state.costs.reduce((s, c) => s + c.amount, 0);
+    const byCat = {};
+    CATEGORIES.forEach(c => { byCat[c.id] = 0; });
+    state.costs.forEach(c => { byCat[c.category] = (byCat[c.category] || 0) + c.amount; });
+    const topCat = CATEGORIES.slice().sort((a, b) => byCat[b.id] - byCat[a.id])[0].id;
+    const revenue = state.harvest.reduce((s, h) => s + h.kg * state.price * QUALITY_FACTOR[h.quality], 0);
+    const margin = revenue - totalCost;
+    const costPerKg = totalKg ? totalCost / totalKg : 0;
+    return { totalKg, kgA, totalCost, byCat, topCat, revenue, margin, costPerKg };
+  }
+
+  function renderCostKpis() {
+    const s = costSummary();
+    const marginPct = s.revenue ? (s.margin / s.revenue) * 100 : 0;
+    const price = fmtUSD(state.price, 2);
+    $('#costKpis').innerHTML =
+      kpiCard(t('kpi.harvest'), `${fmtNum(s.totalKg)}<small>kg</small>`, 'accent',
+        t('kpi.harvest.status', { a: s.totalKg ? Math.round(s.kgA / s.totalKg * 100) : 0, kgp: fmtNum(s.totalKg / TOTAL_PLANTS, 2) })) +
+      kpiCard(t('kpi.cost'), fmtUSD(s.totalCost), 'earth',
+        t('kpi.cost.status', { n: state.costs.length, cat: t('cat.' + s.topCat) })) +
+      kpiCard(t('kpi.costkg'), `${fmtUSD(s.costPerKg, 2)}<small>/kg</small>`, s.costPerKg < state.price ? 'ok' : 'crit',
+        t(s.costPerKg < state.price ? 'kpi.costkg.ok' : 'kpi.costkg.crit')) +
+      kpiCard(t('kpi.margin'), `${s.margin < 0 ? '−' : ''}${fmtUSD(Math.abs(s.margin))}<small>· ${fmtNum(marginPct)} %</small>`, s.margin >= 0 ? 'ok' : 'crit',
+        s.margin >= 0 ? t('kpi.margin.status', { rev: fmtUSD(s.revenue), price }) : t('kpi.margin.neg', { price }));
+  }
+
+  // --- Tooltip -----------------------------------------------------------------
+  const tip = $('#tooltip');
+  function showTip(html, x, y) {
+    tip.innerHTML = html;
+    tip.classList.add('show');
+    tip.setAttribute('aria-hidden', 'false');
+    moveTip(x, y);
+  }
+  function moveTip(x, y) {
+    const r = tip.getBoundingClientRect();
+    let left = x + 14, top = y - r.height - 10;
+    if (left + r.width > window.innerWidth - 8) left = x - r.width - 14;
+    if (top < 8) top = y + 16;
+    tip.style.left = left + 'px'; tip.style.top = top + 'px';
+  }
+  function hideTip() { tip.classList.remove('show'); tip.setAttribute('aria-hidden', 'true'); }
+
+  function niceMax(v) {
+    if (v <= 0) return 100;
+    const step = v <= 250 ? 50 : v <= 500 ? 100 : v <= 1000 ? 200 : v <= 2500 ? 500 : 1000;
+    return Math.ceil(v / step) * step;
+  }
+
+  // --- Balkendiagramm: Erntemenge über Zeit -------------------------------------
+  function renderHarvestChart() {
+    const byDate = {};
+    state.harvest.forEach(h => {
+      if (!byDate[h.date]) byDate[h.date] = { date: h.date, kg: 0, parts: {} };
+      byDate[h.date].kg += h.kg;
+      byDate[h.date].parts[h.plot] = (byDate[h.date].parts[h.plot] || 0) + h.kg;
+    });
+    const rows = Object.values(byDate).sort((a, b) => a.date.localeCompare(b.date));
+    const W = 560, H = 230, L = 44, R = 10, T = 22, B = 30;
+    const pw = W - L - R, ph = H - T - B;
+    const max = niceMax(Math.max(...rows.map(r => r.kg), 0));
+    const ticks = 4;
+    const band = pw / Math.max(rows.length, 1);
+    const bw = Math.min(24, band * 0.62);
+    const maxIdx = rows.reduce((mi, r, i) => (r.kg > rows[mi].kg ? i : mi), 0);
+    const labelEvery = rows.length > 9 ? Math.ceil(rows.length / 7) : 1;
+
+    let g = '<g class="grid">';
+    let ax = '<g class="axis">';
+    for (let i = 0; i <= ticks; i++) {
+      const v = max * i / ticks, y = T + ph - ph * i / ticks;
+      g += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}"/>`;
+      ax += `<text x="${L - 8}" y="${y + 4}" text-anchor="end">${fmtNum(v)}</text>`;
+    }
+    g += '</g>';
+    let bars = '';
+    rows.forEach((r, i) => {
+      const x = L + band * i + (band - bw) / 2;
+      const h = ph * r.kg / max;
+      const y = T + ph - h;
+      const rad = Math.min(4, h);
+      const path = `M${x},${T + ph} V${y + rad} a${rad},${rad} 0 0 1 ${rad},-${rad} H${x + bw - rad} a${rad},${rad} 0 0 1 ${rad},${rad} V${T + ph} Z`;
+      const parts = Object.keys(r.parts).map(p => `${esc(PLOTS[p].name)}: <b>${fmtNum(r.parts[p])} kg</b>`).join('<br>');
+      bars += `<g class="bar-group" data-tip="${esc(`<div>${esc(fmtDate(r.date, 'long'))}</div><div><b>${fmtNum(r.kg)} kg</b></div>${parts}`)}">
+        <rect class="bar-hit" x="${L + band * i}" y="${T}" width="${band}" height="${ph}"/>
+        <path class="bar" d="${path}"/>
+        ${i === maxIdx ? `<text class="bar-label" x="${x + bw / 2}" y="${y - 6}">${fmtNum(r.kg)}</text>` : ''}
+      </g>`;
+      if (i % labelEvery === 0) ax += `<text x="${L + band * i + band / 2}" y="${H - 8}" text-anchor="middle">${esc(fmtDate(r.date, 'short'))}</text>`;
+    });
+    ax += '</g>';
+    $('#harvestChart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t('chart.harvest.title'))}">${g}${bars}${ax}</svg>`;
+    $$('#harvestChart .bar-group').forEach(el => {
+      el.addEventListener('mouseenter', e => showTip(el.dataset.tip, e.clientX, e.clientY));
+      el.addEventListener('mousemove', e => moveTip(e.clientX, e.clientY));
+      el.addEventListener('mouseleave', hideTip);
+    });
+  }
+
+  // --- Donut: Kosten nach Kategorie ---------------------------------------------
+  function renderCostDonut() {
+    const s = costSummary();
+    const size = 150, cx = 75, cy = 75, r = 58, sw = 18;
+    const C = 2 * Math.PI * r;
+    const gap = 2;
+    const items = CATEGORIES.map(c => ({ ...c, value: s.byCat[c.id] || 0 })).filter(c => c.value > 0);
+    let offset = 0, segs = '';
+    items.forEach(c => {
+      const len = (c.value / s.totalCost) * C;
+      const dash = Math.max(len - gap, 0.5);
+      segs += `<circle class="seg" data-cat="${c.id}" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${c.color}" stroke-width="${sw}"
+        stroke-dasharray="${dash} ${C - dash}" stroke-dashoffset="${-offset - gap / 2}" transform="rotate(-90 ${cx} ${cy})"
+        data-tip="${esc(`<div>${esc(t('cat.' + c.id))}</div><div><b>${fmtUSD(c.value)}</b> · ${fmtNum(c.value / s.totalCost * 100)} %</div>`)}"/>`;
+      offset += len;
+    });
+    $('#costDonut').innerHTML = `<svg viewBox="0 0 ${size} ${size}" role="img" aria-label="${esc(t('chart.costs.title'))}">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--surface-3)" stroke-width="${sw}"/>
+      ${segs}
+      <text class="donut-center" x="${cx}" y="${cy + 2}">${fmtUSD(s.totalCost)}</text>
+      <text class="donut-center-label" x="${cx}" y="${cy + 17}">${esc(t('chart.total'))}</text>
+    </svg>`;
+    $('#costLegend').innerHTML = CATEGORIES.map(c => {
+      const v = s.byCat[c.id] || 0;
+      return `<div class="legend-row" data-cat="${c.id}">
+        <span class="sw" style="background:${c.color}"></span>
+        <span class="name">${esc(t('cat.' + c.id))}</span>
+        <span class="val">${fmtUSD(v)} <span class="pct">${s.totalCost ? fmtNum(v / s.totalCost * 100) : 0} %</span></span>
+      </div>`;
+    }).join('');
+    const segsEl = $$('#costDonut .seg');
+    const focus = (cat) => segsEl.forEach(el => el.classList.toggle('is-dim', !!cat && el.dataset.cat !== cat));
+    segsEl.forEach(el => {
+      el.addEventListener('mouseenter', e => { focus(el.dataset.cat); showTip(el.dataset.tip, e.clientX, e.clientY); });
+      el.addEventListener('mousemove', e => moveTip(e.clientX, e.clientY));
+      el.addEventListener('mouseleave', () => { focus(null); hideTip(); });
+    });
+    $$('#costLegend .legend-row').forEach(row => {
+      row.addEventListener('mouseenter', () => focus(row.dataset.cat));
+      row.addEventListener('mouseleave', () => focus(null));
+    });
+  }
+
+  // --- Tabellen ------------------------------------------------------------------
+  let highlightId = null;
+  function renderTables() {
+    const hb = $('#harvestTable tbody');
+    hb.innerHTML = state.harvest.slice().sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id).map(h => `
+      <tr${h.id === highlightId ? ' class="is-new"' : ''}>
+        <td class="num">${esc(fmtDate(h.date, 'table'))}</td>
+        <td><span class="plot-tag"><span class="dot" style="background:var(--${PLOTS[h.plot].type === 'field' ? 'accent' : 'water'})"></span>${esc(PLOTS[h.plot].name)}</span></td>
+        <td class="num">${fmtNum(h.kg)}</td>
+        <td><span class="quality ${h.quality}" title="${esc(t('quality.' + h.quality))}"><span class="sw"></span>${esc(t('quality.short.' + h.quality))}</span></td>
+      </tr>`).join('');
+    $('#harvestCount').textContent = t('table.count', { n: state.harvest.length });
+
+    const cb = $('#costTable tbody');
+    cb.innerHTML = state.costs.slice().sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id).map(c => {
+      const cat = CATEGORIES.find(x => x.id === c.category);
+      return `<tr${c.id === highlightId ? ' class="is-new"' : ''}>
+        <td class="num">${esc(fmtDate(c.date, 'table'))}</td>
+        <td><span class="cat"><span class="sw" style="background:${cat.color}"></span>${esc(t('cat.' + c.category))}</span></td>
+        <td>${esc(c.noteKey ? t(c.noteKey) : (c.note || '–'))}</td>
+        <td class="num">${fmtUSD(c.amount, 2)}</td>
+      </tr>`;
+    }).join('');
+    $('#costCount').textContent = t('table.count', { n: state.costs.length });
+    highlightId = null;
+  }
+
+  function renderCosts() {
+    renderCostKpis();
+    renderHarvestChart();
+    renderCostDonut();
+    renderTables();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Formular
+  // ---------------------------------------------------------------------------
+  function setEntryType(type) {
+    state.entryType = type;
+    $$('#entryTypeSwitch button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.type === type)));
+    $$('#entryForm [data-for]').forEach(f => { f.hidden = f.dataset.for !== type; });
+    $('#formFeedback').textContent = '';
+  }
+  function feedback(msg, isError) {
+    const el = $('#formFeedback');
+    el.textContent = msg;
+    el.classList.toggle('error', !!isError);
+  }
+  function handleSubmit(e) {
+    e.preventDefault();
+    const date = $('#fDate').value;
+    if (!date) { feedback(t('form.err.date'), true); $('#fDate').focus(); return; }
+    if (state.entryType === 'harvest') {
+      const kg = Number($('#fKg').value);
+      if (!(kg > 0)) { feedback(t('form.err.kg'), true); $('#fKg').focus(); return; }
+      const plot = $('#fPlot').value, quality = $('#fQuality').value;
+      const id = uid();
+      state.harvest.push({ id, date, plot, kg: Math.round(kg), quality });
+      highlightId = id;
+      feedback(t('form.ok.harvest', { kg: fmtNum(kg), plot: PLOTS[plot].name }));
+      $('#fKg').value = '';
+    } else {
+      const amount = Number($('#fAmount').value);
+      if (!(amount > 0)) { feedback(t('form.err.amount'), true); $('#fAmount').focus(); return; }
+      const id = uid();
+      state.costs.push({ id, date, category: $('#fCategory').value, note: $('#fNote').value.trim(), amount: Math.round(amount * 100) / 100 });
+      highlightId = id;
+      feedback(t('form.ok.cost', { amt: fmtUSD(amount, 2) }));
+      $('#fAmount').value = ''; $('#fNote').value = '';
+    }
+    renderCosts();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Sprache, Theme, Tabs, Navigation
+  // ---------------------------------------------------------------------------
+  function applyStaticI18n() {
+    $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+    $$('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
+    $$('[data-i18n-placeholder]').forEach(el => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+    document.documentElement.lang = state.lang;
+    document.title = 'Conuco – ' + t('tab.water') + ' · ' + t('tab.costs');
+  }
+  function setLang(lang) {
+    state.lang = lang;
+    $$('#langSwitch button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+    applyStaticI18n();
+    $('#formFeedback').textContent = '';
+    renderAll();
+  }
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    try { localStorage.setItem('conuco.theme', theme); } catch (e) {}
+  }
+  function setTab(tab) {
+    state.tab = tab;
+    $$('.tab').forEach(b => {
+      const on = b.dataset.tab === tab;
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+    $('#panel-water').hidden = tab !== 'water';
+    $('#panel-costs').hidden = tab !== 'costs';
+  }
+  function setPlot(plot) {
+    state.plot = plot;
+    $$('#plotSwitch button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.plot === plot)));
+    renderWater();
+  }
+  function setDay(day, focusChip) {
+    state.day = clamp(day, 1, WEATHER.days.length);
+    renderWater();
+    if (focusChip) { const chip = $(`#timeline [data-day="${state.day}"]`); if (chip) chip.focus(); }
+  }
+
+  function renderAll() { renderWater(); renderCosts(); }
+
+  function bind() {
+    $('#langSwitch').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setLang(b.dataset.lang); });
+    $('#plotSwitch').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setPlot(b.dataset.plot); });
+    $('#themeToggle').addEventListener('click', () => setTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
+
+    const tablist = $('.tabs');
+    tablist.addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) setTab(b.dataset.tab); });
+    tablist.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      const tabs = $$('.tab'); const i = tabs.findIndex(x => x.getAttribute('aria-selected') === 'true');
+      const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      setTab(next.dataset.tab); next.focus(); e.preventDefault();
+    });
+
+    $('#timeline').addEventListener('click', e => { const b = e.target.closest('.day-chip'); if (b) setDay(Number(b.dataset.day)); });
+    $('#timeline').addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft') { setDay(state.day - 1, true); e.preventDefault(); }
+      if (e.key === 'ArrowRight') { setDay(state.day + 1, true); e.preventDefault(); }
+      if (e.key === 'Home') { setDay(1, true); e.preventDefault(); }
+      if (e.key === 'End') { setDay(WEATHER.days.length, true); e.preventDefault(); }
+    });
+    $('#dayPrev').addEventListener('click', () => setDay(state.day - 1));
+    $('#dayNext').addEventListener('click', () => setDay(state.day + 1));
+
+    $('#priceInput').addEventListener('input', e => {
+      const v = Number(e.target.value);
+      if (v >= 0 && isFinite(v)) { state.price = v; renderCostKpis(); }
+    });
+    $('#entryTypeSwitch').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setEntryType(b.dataset.type); });
+    $('#entryForm').addEventListener('submit', handleSubmit);
+    window.addEventListener('scroll', hideTip, { passive: true });
+  }
+
+  // Optional: JSON direkt laden, wenn die Demo über http(s) läuft (per file:// blockiert der Browser fetch).
+  function tryLoadJson() {
+    if (!/^https?:/.test(location.protocol) || !window.fetch) return;
+    fetch('data/wetter-14-tage.json').then(r => r.ok ? r.json() : null).then(json => {
+      if (json && Array.isArray(json.days) && json.days.length) { WEATHER = json; renderWater(); }
+    }).catch(() => {});
+  }
+
+  function init() {
+    $('#fDate').value = WEATHER.generatedFor || '2026-09-07';
+    $('#priceInput').value = state.price.toFixed(2);
+    bind();
+    setEntryType('harvest');
+    applyStaticI18n();
+    setTab('water');
+    renderAll();
+    tryLoadJson();
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+
+
+</script>
+</body>
+</html>
